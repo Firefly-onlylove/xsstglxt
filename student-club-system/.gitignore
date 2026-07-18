@@ -1,0 +1,23 @@
+# Build artifacts
+scms.exe
+*.o
+*.obj
+
+# Dependencies
+client/node_modules/
+
+# Runtime data (keep directory structure, ignore contents)
+storage/receipts/*
+storage/exports/*
+storage/backups/*
+!storage/receipts/.gitkeep
+!storage/exports/.gitkeep
+!storage/backups/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
