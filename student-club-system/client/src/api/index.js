@@ -44,7 +44,22 @@ export const api = {
   get:    (url, params) => request('GET', url, params),
   post:   (url, data)   => request('POST', url, data),
   put:    (url, data)   => request('PUT', url, data),
-  delete: (url, data)   => request('DELETE', url, data)
+  delete: (url, data)   => request('DELETE', url, data),
+  upload: (url, formData) => uploadRequest(url, formData)
+}
+
+async function uploadRequest(url, formData) {
+  const res = await fetch(BASE + url, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData
+  })
+  if (!res.ok) throw new Error('HTTP ' + res.status)
+  const json = await res.json()
+  if (json.code === 0) {
+    json.data = normalizeData(json.data)
+  }
+  return json
 }
 
 export async function checkAuth() {

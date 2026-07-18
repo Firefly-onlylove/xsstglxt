@@ -7,11 +7,11 @@
       <el-input v-model="filters.keyword" placeholder="搜索社团名称" clearable style="width:220px">
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
-      <el-select v-model="filters.club_type" placeholder="类型" clearable style="width:120px">
+      <el-select v-model="filters.category" placeholder="类型" clearable style="width:120px">
         <el-option v-for="t in clubTypes" :key="t" :label="t" :value="t" />
       </el-select>
       <el-select v-model="filters.college_id" placeholder="学院" clearable style="width:160px">
-        <el-option v-for="c in colleges" :key="c.college_id" :label="c.name" :value="c.college_id" />
+        <el-option v-for="c in colleges" :key="c.college_id" :label="c.college_name" :value="c.college_id" />
       </el-select>
     </FilterBar>
 
@@ -23,9 +23,9 @@
             <div class="club-logo">
               <el-icon style="font-size:36px;color:#1677FF"><OfficeBuilding /></el-icon>
             </div>
-            <div class="club-name">{{ club.name }}</div>
+            <div class="club-name">{{ club.club_name }}</div>
             <div class="club-tags">
-              <el-tag size="small" style="margin-right:4px">{{ club.club_type }}</el-tag>
+              <el-tag size="small" style="margin-right:4px">{{ club.category }}</el-tag>
               <el-tag size="small" type="info">{{ club.college_name }}</el-tag>
             </div>
             <div class="club-desc">{{ club.description || '暂无简介' }}</div>
@@ -58,11 +58,11 @@ const tableData = ref([])
 const total = ref(0)
 const page = ref(1)
 const colleges = ref([])
-const filters = ref({ keyword: '', club_type: '', college_id: null })
-const clubTypes = ['学术', '文艺', '体育', '实践', '其他']
+const filters = ref({ keyword: '', category: '', college_id: null })
+const clubTypes = ['学术', '文艺', '体育', '公益', '实践', '其他']
 
-const joinStatusLabel = s => ({ not_joined: '可加入', pending: '审核中', joined: '已加入' }[s] || s)
-const joinStatusType  = s => ({ not_joined: 'primary', pending: 'warning', joined: 'success' }[s] || '')
+const joinStatusLabel = s => ({ not_joined: '可加入', pending: '审核中', approved: '已加入', joined: '已加入' }[s] || '可加入')
+const joinStatusType  = s => ({ not_joined: 'primary', pending: 'warning', approved: 'success', joined: 'success' }[s] || 'primary')
 
 async function loadData() {
   loading.value = true
@@ -70,7 +70,7 @@ async function loadData() {
   loading.value = false
   if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.data.total || 0 }
 }
-function onReset() { filters.value = { keyword: '', club_type: '', college_id: null }; loadData() }
+function onReset() { filters.value = { keyword: '', category: '', college_id: null }; loadData() }
 
 onMounted(async () => {
   const res = await api.get('/api/colleges')

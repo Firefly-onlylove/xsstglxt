@@ -59,6 +59,20 @@
         <el-form-item label="活动简介" prop="description">
           <el-input v-model="actForm.description" type="textarea" :rows="3" />
         </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="报名权限">
+              <el-switch v-model="actForm.members_only"
+                active-text="仅限本社成员" inactive-text="全部可报" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="开启签到">
+              <el-switch v-model="actForm.enable_signin"
+                active-text="是" inactive-text="否" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
@@ -69,20 +83,25 @@
     <!-- 签到管理 -->
     <el-dialog v-model="signinVisible" :title="(current?.title || '') + ' — 签到管理'" width="700px">
       <div style="margin-bottom:12px">
-        签到码：<el-tag type="warning" size="large">{{ current?.signin_code }}</el-tag>
+        <template v-if="current?.checkin_code">
+          签到码：<el-tag type="warning" size="large">{{ current.checkin_code }}</el-tag>
+        </template>
+        <template v-else>
+          签到码：<el-tag type="info" size="large">未开启签到</el-tag>
+        </template>
         <el-button size="small" style="margin-left:8px" @click="manualSignin">手动签到</el-button>
       </div>
       <el-table :data="signinList" border size="small">
         <el-table-column prop="real_name"  label="姓名"   width="100" />
-        <el-table-column prop="student_id" label="学号"   width="120" />
+        <el-table-column prop="student_no" label="学号"   width="120" />
         <el-table-column prop="status"     label="状态"   width="90">
           <template #default="{ row }">
-            <el-tag :type="row.status==='signed_in'?'success':'info'" size="small">
-              {{ row.status==='signed_in'?'已签到':'未签到' }}
+            <el-tag :type="row.status==='attended'?'success':'info'" size="small">
+              {{ row.status==='attended'?'已签到':row.status==='registered'?'未签到':row.status }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="signin_time" label="签到时间" />
+        <el-table-column prop="checkin_time" label="签到时间" />
       </el-table>
     </el-dialog>
   </div>
@@ -103,7 +122,7 @@ const { clubId } = useClub()
 const formVisible = ref(false); const signinVisible = ref(false)
 const editing = ref(null); const current = ref(null)
 const actFormRef = ref(); const signinList = ref([])
-const actForm = ref({ title: '', max_participants: 50, start_time: '', end_time: '', signup_deadline: '', location: '', description: '' })
+const actForm = ref({ title: '', max_participants: 50, start_time: '', end_time: '', signup_deadline: '', location: '', description: '', members_only: false, enable_signin: false })
 const actRules = {
   title:            [{ required: true }],
   start_time:       [{ required: true, message: '请选择开始时间' }],
@@ -118,8 +137,8 @@ const columns = [
   { prop: 'title',       label: '活动名称' },
   { prop: 'start_time',  label: '开始时间',  width: 160 },
   { prop: 'location',    label: '地点',      width: 120 },
-  { prop: 'registered_count', label: '报名/上限', width: 90,
-    formatter: (row) => `${row.registered_count}/${row.max_participants}` },
+  { prop: 'current_count', label: '报名/上限', width: 90,
+    formatter: (row) => `${row.current_count}/${row.max_participants}` },
   { slot: 'status',      label: '状态',      width: 100 },
   { slot: 'actions',     label: '操作',      width: 260, fixed: 'right' }
 ]
@@ -136,10 +155,10 @@ async function loadData() {
 }
 function onReset() { filters.value = { status: '' }; loadData() }
 function onPage(e) { page.value = e.page; loadData() }
-function openCreate() { editing.value = {}; actForm.value = { title: '', max_participants: 50, start_time: '', end_time: '', signup_deadline: '', location: '', description: '' }; formVisible.value = true }
+function openCreate() { editing.value = {}; actForm.value = { title: '', max_participants: 50, start_time: '', end_time: '', signup_deadline: '', location: '', description: '', members_only: false, enable_signin: false }; formVisible.value = true }
 function openEdit(row) {
   editing.value = row
-  actForm.value = { title: row.title, max_participants: row.max_participants, start_time: row.start_time, end_time: row.end_time, signup_deadline: row.signup_deadline, location: row.location, description: row.description }
+  actForm.value = { title: row.title, max_participants: row.max_participants, start_time: row.start_time, end_time: row.end_time, signup_deadline: row.signup_deadline, location: row.location, description: row.description, members_only: row.join_permission === 'members_only', enable_signin: !!row.enable_signin }
   formVisible.value = true
 }
 async function saveActivity() {
@@ -147,7 +166,12 @@ async function saveActivity() {
   submitting.value = true
   const url = editing.value?.activity_id ? '/api/club/' + clubId.value + '/activities/' + editing.value.activity_id : '/api/club/' + clubId.value + '/activities'
   const method = editing.value?.activity_id ? 'put' : 'post'
-  const res = await api[method](url, actForm.value)
+  const payload = {
+    ...actForm.value,
+    join_permission: actForm.value.members_only ? 'members_only' : 'all',
+    enable_signin: actForm.value.enable_signin ? 1 : 0
+  }
+  const res = await api[method](url, payload)
   submitting.value = false
   if (res.code === 0) { ElMessage.success('保存成功'); formVisible.value = false; loadData() }
   else ElMessage.error(res.msg)

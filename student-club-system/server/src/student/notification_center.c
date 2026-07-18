@@ -23,21 +23,31 @@
 
 #include <stdio.h>
 
-/* GET /api/notifications?page=&unread_only= — 我的消息列表 */
+/* GET /api/notifications?page=&type=&unread_only= — 我的消息列表 */
 void pub_notif_list(ApiContext *ctx) {
     if (!api_require_login(ctx)) return;
     int uid = ctx->user->user_id;
     int page = api_get_int(ctx, "page", 1);
     if (page < 1) page = 1;
-    int unread_only = api_get_int(ctx, "unread_only", 0);
     int page_size = PAGE_SIZE_DEFAULT;
     int offset = (page - 1) * page_size;
 
-    char filter[128];
-    if (unread_only)
-        snprintf(filter, sizeof(filter), "user_id=%d AND is_read=0", uid);
-    else
-        snprintf(filter, sizeof(filter), "user_id=%d", uid);
+    char type[32] = "";
+    api_get_param(ctx, "type", type, sizeof(type));
+
+    char filter[256];
+    int fl = snprintf(filter, sizeof(filter), "user_id=%d", uid);
+
+    if (utils_str_equal(type, "system")) {
+        fl += snprintf(filter + fl, sizeof(filter) - fl,
+                       " AND type IN ('system','announcement')");
+    } else if (utils_str_equal(type, "club")) {
+        fl += snprintf(filter + fl, sizeof(filter) - fl,
+                       " AND type IN ('club','club_announce','join_request','join_result','role_change','member_removed')");
+    } else if (utils_str_equal(type, "activity")) {
+        fl += snprintf(filter + fl, sizeof(filter) - fl,
+                       " AND type IN ('activity','activity_cancelled','activity_signin_remind','checkin')");
+    }
 
     int total = db_query_int("SELECT COUNT(*) FROM notifications WHERE %s", filter);
 

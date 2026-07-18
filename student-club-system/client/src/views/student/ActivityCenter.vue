@@ -8,7 +8,7 @@
         <el-option label="已结束" value="finished" />
       </el-select>
       <el-select v-model="filters.club_id" placeholder="所属社团" clearable style="width:180px">
-        <el-option v-for="c in myClubs" :key="c.club_id" :label="c.name" :value="c.club_id" />
+        <el-option v-for="c in myClubs" :key="c.club_id" :label="c.club_name" :value="c.club_id" />
       </el-select>
     </FilterBar>
     <div v-loading="loading">
@@ -29,7 +29,7 @@
               <el-icon><Location /></el-icon> {{ act.location }}
             </div>
             <div class="act-footer">
-              <span>报名 {{ act.registered_count }}/{{ act.max_participants }}</span>
+              <span>报名 {{ act.current_count }}/{{ act.max_participants }}</span>
             </div>
           </div>
         </el-col>

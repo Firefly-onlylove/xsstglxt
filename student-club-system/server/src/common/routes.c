@@ -143,6 +143,7 @@ static const Route ROUTES[] = {
     { "POST", "/api/activities/*/register", stu_activity_register, 1 },
     { "POST", "/api/activities/*/cancel",   stu_activity_cancel,   1 },
     { "POST", "/api/activities/*/signin",   stu_activity_signin,   1 },
+    { "GET",  "/api/activities/*/registrations", stu_activity_registrations, 1 },
     { "GET",  "/api/activities/*",          stu_activity_detail,   1 },
     { "GET",  "/api/activities",            stu_activity_list,     1 },
 

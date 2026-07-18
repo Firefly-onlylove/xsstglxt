@@ -11,17 +11,17 @@
                 <el-icon style="font-size:26px;color:#1677FF"><OfficeBuilding /></el-icon>
               </div>
               <div>
-                <div style="font-size:16px;font-weight:600">{{ c.name }}</div>
-                <el-tag size="small" :type="roleType(c.my_role)">{{ roleLabel(c.my_role) }}</el-tag>
+                <div style="font-size:16px;font-weight:600">{{ c.club_name }}</div>
+                <el-tag size="small" :type="roleType(c.role)">{{ roleLabel(c.role) }}</el-tag>
               </div>
             </div>
             <div style="font-size:12px;color:#86909C;margin-bottom:12px">
-              加入时间：{{ c.join_date }} &nbsp;|&nbsp; 成员：{{ c.member_count }}人
+              加入时间：{{ c.join_date }} &nbsp;|&nbsp; 成员：{{ c.member_count }}人 &nbsp;|&nbsp; {{ c.college_name }}
             </div>
             <div style="display:flex;gap:8px">
               <el-button size="small" @click="router.push('/student/club-detail/'+c.club_id)">查看详情</el-button>
               <el-button size="small" type="warning"
-                v-if="c.my_role === 'president' || c.my_role === 'vice_president'"
+                v-if="c.role === 'president' || c.role === 'vice_president'"
                 @click="router.push('/club-admin/dashboard')">
                 管理后台
               </el-button>
@@ -66,8 +66,8 @@ onMounted(async () => {
     api.get('/api/my/applications')
   ])
   loading.value = false
-  if (clubRes.code === 0) clubs.value = clubRes.data || []
-  if (appRes.code === 0) applications.value = appRes.data || []
+  if (clubRes.code === 0) clubs.value = clubRes.data.list || []
+  if (appRes.code === 0) applications.value = appRes.data.list || []
 })
 </script>
 

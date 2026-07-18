@@ -155,6 +155,7 @@ void stu_club_leave(ApiContext *ctx);        /* POST /api/clubs/{id}/leave 退�
 /* 活动 */
 void stu_activity_list(ApiContext *ctx);     /* GET  /api/activities */
 void stu_activity_detail(ApiContext *ctx);   /* GET  /api/activities/{id} */
+void stu_activity_registrations(ApiContext *ctx); /* GET /api/activities/{id}/registrations */
 void stu_activity_register(ApiContext *ctx); /* POST /api/activities/{id}/register */
 void stu_activity_cancel(ApiContext *ctx);   /* POST /api/activities/{id}/cancel */
 void stu_activity_signin(ApiContext *ctx);   /* POST /api/activities/{id}/signin 输入签到码 */

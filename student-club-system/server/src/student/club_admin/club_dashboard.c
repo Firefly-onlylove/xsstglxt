@@ -55,9 +55,17 @@ void club_dashboard(ApiContext *ctx) {
         "AND join_status='approved' AND left_at IS NULL", club_id);
     int pending_cnt = db_query_int(
         "SELECT COUNT(*) FROM members WHERE club_id=%d AND join_status='pending'", club_id);
+    int reimb_pending = db_query_int(
+        "SELECT COUNT(*) FROM reimbursement WHERE club_id=%d AND status='pending'", club_id);
     int activity_cnt = db_query_int(
         "SELECT COUNT(*) FROM activities WHERE club_id=%d "
         "AND status IN ('published','ongoing')", club_id);
+    int ongoing_cnt = db_query_int(
+        "SELECT COUNT(*) FROM activities WHERE club_id=%d "
+        "AND status='ongoing'", club_id);
+    int new_members = db_query_int(
+        "SELECT COUNT(*) FROM members WHERE club_id=%d "
+        "AND join_status='approved' AND joined_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)", club_id);
     /* 经费余额：收入合计 - 已报销支出合计 */
     double income = db_query_double(
         "SELECT COALESCE(SUM(amount),0) FROM finance "
@@ -66,14 +74,42 @@ void club_dashboard(ApiContext *ctx) {
         "SELECT COALESCE(SUM(amount),0) FROM finance "
         "WHERE club_id=%d AND type='expense'", club_id);
 
+    /* 社团基本信息 */
+    MYSQL_RES *profile_res = db_query(
+        "SELECT c.club_id, c.club_name, c.description, c.category, c.level, "
+        "c.advisor, c.join_permission, c.member_count, c.created_at, "
+        "COALESCE(col.college_name,'') AS college_name, "
+        "COALESCE(u.real_name,'') AS president_name "
+        "FROM clubs c "
+        "LEFT JOIN colleges col ON c.college_id=col.college_id "
+        "LEFT JOIN users u ON c.president_id=u.user_id "
+        "WHERE c.club_id=%d", club_id);
+    char *profile_json = db_result_to_json_array(profile_res);
+    mysql_free_result(profile_res);
+
+    /* 最近活动 */
+    MYSQL_RES *act_res = db_query(
+        "SELECT activity_id, title, location, start_time, status "
+        "FROM activities WHERE club_id=%d "
+        "ORDER BY start_time DESC LIMIT 5", club_id);
+    char *recent_json = db_result_to_json_array(act_res);
+    mysql_free_result(act_res);
+
     JsonBuilder jb;
     json_init(&jb);
     json_add_int(&jb, "member_count", member_cnt);
-    json_add_int(&jb, "pending_join", pending_cnt);
+    json_add_int(&jb, "new_members_this_month", new_members);
     json_add_int(&jb, "activity_count", activity_cnt);
+    json_add_int(&jb, "ongoing_activities", ongoing_cnt);
+    json_add_int(&jb, "pending_joins", pending_cnt);
+    json_add_int(&jb, "pending_reimb", reimb_pending);
     json_add_double(&jb, "balance", income - expense);
+    json_add_raw(&jb, "club_info", profile_json ? profile_json : "null");
+    json_add_raw(&jb, "recent_activities", recent_json ? recent_json : "[]");
     api_ok_data(ctx, json_finish(&jb));
     json_free(&jb);
+    if (profile_json) free(profile_json);
+    if (recent_json) free(recent_json);
 }
 
 /* GET /api/club/{id}/profile — 社团资料（管理视角，含待审信息） */

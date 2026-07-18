@@ -34,9 +34,10 @@
         <div class="card" style="margin-bottom:16px">
           <div style="font-size:15px;font-weight:600;margin-bottom:16px">我的状态</div>
           <div v-if="!myStatus || myStatus === 'not_registered'">
-            <el-button type="primary" style="width:100%" :disabled="activity.status !== 'published'"
+            <el-button type="primary" style="width:100%"
+              :disabled="!canRegister"
               @click="doRegister">
-              {{ activity.status === 'published' ? '立即报名' : '报名未开放' }}
+              {{ registerBtnText }}
             </el-button>
           </div>
           <div v-else-if="myStatus === 'registered'">
@@ -76,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -92,6 +93,20 @@ const signinCode = ref('')
 
 const actStatusLabel = s => ({ draft:'草稿', published:'报名中', ongoing:'进行中', finished:'已结束', cancelled:'已取消' }[s] || s)
 const actStatusType  = s => ({ published:'primary', ongoing:'success', finished:'info', cancelled:'danger' }[s] || '')
+
+const canRegister = computed(() => {
+  if (!activity.value) return false
+  if (activity.value.status !== 'published') return false
+  if (activity.value.join_permission === 'members_only' && activity.value.my_status === null) return false
+  return true
+})
+
+const registerBtnText = computed(() => {
+  if (!activity.value) return '加载中...'
+  if (activity.value.status !== 'published') return '报名未开放'
+  if (activity.value.join_permission === 'members_only' && activity.value.my_status === null) return '仅限社团成员报名'
+  return '立即报名'
+})
 
 async function doRegister() {
   const res = await api.post('/api/activities/' + route.params.id + '/register')
@@ -122,7 +137,7 @@ async function loadData() {
     api.get('/api/activities/' + id + '/registrations')
   ])
   loading.value = false
-  if (actRes.code === 0) { activity.value = actRes.data; myStatus.value = actRes.data.my_status || 'not_registered' }
+  if (actRes.code === 0) { activity.value = actRes.data.list?.[0] || null; myStatus.value = activity.value?.my_status || 'not_registered' }
   if (regRes.code === 0) registrations.value = regRes.data.list || []
 }
 

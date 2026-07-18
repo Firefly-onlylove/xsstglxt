@@ -58,13 +58,15 @@ void club_activity_list(ApiContext *ctx) {
 
     MYSQL_RES *res = db_query(
         "SELECT activity_id, title, location, start_time, end_time, "
-        "max_participants, current_count, status, created_at "
+        "max_participants, current_count, status, created_at, "
+        "checkin_code, join_permission, enable_signin, description "
         "FROM activities WHERE club_id=%d ORDER BY created_at DESC", club_id);
     api_send_result(ctx, res);
 }
 
 /* POST /api/club/{id}/activities — 新建活动（草稿）
- * body: title, description, location, start_time, end_time, signup_deadline, max_participants */
+ * body: title, description, location, start_time, end_time, signup_deadline, max_participants,
+ *       join_permission(all/members_only), enable_signin(0/1) */
 void club_activity_create(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
@@ -72,16 +74,21 @@ void club_activity_create(ApiContext *ctx) {
 
     char title[128] = "", description[2000] = "", location[128] = "";
     char start_time[32] = "", end_time[32] = "", signup_deadline[32] = "";
+    char join_perm[16] = "all";
     api_get_json_str(ctx, "title",           title,           sizeof(title));
     api_get_json_str(ctx, "description",     description,     sizeof(description));
     api_get_json_str(ctx, "location",        location,        sizeof(location));
     api_get_json_str(ctx, "start_time",      start_time,      sizeof(start_time));
     api_get_json_str(ctx, "end_time",        end_time,        sizeof(end_time));
     api_get_json_str(ctx, "signup_deadline", signup_deadline, sizeof(signup_deadline));
+    api_get_json_str(ctx, "join_permission", join_perm,       sizeof(join_perm));
     int max_p = api_get_json_int(ctx, "max_participants", 0);
+    int enable_signin = api_get_json_int(ctx, "enable_signin", 0);
 
     if (utils_is_empty(title))      { api_error(ctx, ERR_VALIDATION, "请填写活动标题"); return; }
     if (utils_is_empty(start_time)) { api_error(ctx, ERR_VALIDATION, "请填写开始时间"); return; }
+    if (!utils_str_equal(join_perm, "members_only"))
+        utils_strlcpy(join_perm, "all", sizeof(join_perm));
 
     char *e_title = db_escape(title);
     char *e_desc  = db_escape(description);
@@ -90,12 +97,13 @@ void club_activity_create(ApiContext *ctx) {
     int rc = db_execute(
         "INSERT INTO activities "
         "(club_id, title, description, location, start_time, end_time, "
-        " signup_deadline, max_participants, current_count, status, created_at) "
-        "VALUES (%d,'%s','%s','%s','%s','%s','%s',%d,0,'draft',NOW())",
+        " signup_deadline, max_participants, join_permission, enable_signin, "
+        " current_count, status, created_at) "
+        "VALUES (%d,'%s','%s','%s','%s','%s','%s',%d,'%s',%d, 0,'draft',NOW())",
         club_id, e_title, e_desc, e_loc, start_time,
         utils_is_empty(end_time) ? "1970-01-01 00:00:00" : end_time,
         utils_is_empty(signup_deadline) ? "1970-01-01 00:00:00" : signup_deadline,
-        max_p);
+        max_p, join_perm, enable_signin);
     free(e_title); free(e_desc); free(e_loc);
 
     if (rc < 0) { api_error(ctx, ERR_DB, "创建失败"); return; }
@@ -118,19 +126,40 @@ void club_activity_update(ApiContext *ctx) {
     }
 
     char title[128] = "", description[2000] = "", location[128] = "";
-    api_get_json_str(ctx, "title",       title,       sizeof(title));
-    api_get_json_str(ctx, "description", description, sizeof(description));
-    api_get_json_str(ctx, "location",    location,    sizeof(location));
-    int max_p = api_get_json_int(ctx, "max_participants", 0);
+    char start_time[32] = "", end_time[32] = "", signup_deadline[32] = "";
+    char join_perm[16] = "";
+    api_get_json_str(ctx, "title",           title,           sizeof(title));
+    api_get_json_str(ctx, "description",     description,     sizeof(description));
+    api_get_json_str(ctx, "location",        location,        sizeof(location));
+    api_get_json_str(ctx, "start_time",      start_time,      sizeof(start_time));
+    api_get_json_str(ctx, "end_time",        end_time,        sizeof(end_time));
+    api_get_json_str(ctx, "signup_deadline", signup_deadline, sizeof(signup_deadline));
+    api_get_json_str(ctx, "join_permission", join_perm,       sizeof(join_perm));
+    int max_p = api_get_json_int(ctx, "max_participants", -1);
+    int enable_signin = api_get_json_int(ctx, "enable_signin", -1);
 
     char *e_title = db_escape(title);
     char *e_desc  = db_escape(description);
     char *e_loc   = db_escape(location);
-    db_execute("UPDATE activities SET title='%s', description='%s', location='%s', "
-               "max_participants=%d WHERE activity_id=%d",
-               e_title, e_desc, e_loc, max_p, aid);
+
+    char set[1024] = "";
+    int sl = 0;
+    if (!utils_is_empty(title))       sl += snprintf(set + sl, sizeof(set) - sl, "title='%s', ", e_title);
+    if (!utils_is_empty(description)) sl += snprintf(set + sl, sizeof(set) - sl, "description='%s', ", e_desc);
+    if (!utils_is_empty(location))    sl += snprintf(set + sl, sizeof(set) - sl, "location='%s', ", e_loc);
+    if (!utils_is_empty(start_time))  sl += snprintf(set + sl, sizeof(set) - sl, "start_time='%s', ", start_time);
+    if (!utils_is_empty(end_time))    sl += snprintf(set + sl, sizeof(set) - sl, "end_time='%s', ", end_time);
+    if (!utils_is_empty(signup_deadline)) sl += snprintf(set + sl, sizeof(set) - sl, "signup_deadline='%s', ", signup_deadline);
+    if (max_p >= 0)                   sl += snprintf(set + sl, sizeof(set) - sl, "max_participants=%d, ", max_p);
+    if (!utils_is_empty(join_perm))   sl += snprintf(set + sl, sizeof(set) - sl, "join_permission='%s', ", join_perm);
+    if (enable_signin >= 0)           sl += snprintf(set + sl, sizeof(set) - sl, "enable_signin=%d, ", enable_signin);
+
     free(e_title); free(e_desc); free(e_loc);
 
+    if (sl == 0) { api_error(ctx, ERR_INPUT, "没有需要更新的字段"); return; }
+    set[sl - 2] = '\0'; /* trim trailing ", " */
+
+    db_execute("UPDATE activities SET %s WHERE activity_id=%d", set, aid);
     api_ok_msg(ctx, "活动已更新");
 }
 
@@ -142,16 +171,23 @@ void club_activity_publish(ApiContext *ctx) {
     if (!club_require_manager(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
-    /* 生成6位随机签到码 */
-    char code[8];
-    utils_gen_signin_code(code);
-    db_execute("UPDATE activities SET status='published', checkin_code='%s' "
-               "WHERE activity_id=%d AND status='draft'", code, aid);
+    /* 检查是否启用签到 */
+    int enable_signin = db_query_int(
+        "SELECT enable_signin FROM activities WHERE activity_id=%d", aid);
+    char code[8] = "";
+    if (enable_signin) {
+        utils_gen_signin_code(code);
+        db_execute("UPDATE activities SET status='published', checkin_code='%s' "
+                   "WHERE activity_id=%d AND status='draft'", code, aid);
+    } else {
+        db_execute("UPDATE activities SET status='published' "
+                   "WHERE activity_id=%d AND status='draft'", aid);
+    }
 
     JsonBuilder jb;
     json_init(&jb);
-    json_add_str(&jb, "checkin_code", code);
-    json_add_str(&jb, "message", "活动已发布");
+    if (enable_signin) json_add_str(&jb, "checkin_code", code);
+    json_add_str(&jb, "message", enable_signin ? "活动已发布，签到已开启" : "活动已发布");
     api_ok_data(ctx, json_finish(&jb));
     json_free(&jb);
 }

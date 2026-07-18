@@ -27,7 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* POST /api/clubs/{id}/join — 申请加入 */
+/* POST /api/clubs/{id}/join — 申请加入（支持文件上传）
+ * multipart/form-data: 可选 attachment(文件) */
 void stu_club_join(ApiContext *ctx) {
     if (!api_require_login(ctx)) return;
     int uid = ctx->user->user_id;
@@ -64,13 +65,28 @@ void stu_club_join(ApiContext *ctx) {
         club_id, uid);
     if (existing > 0) { api_error(ctx, ERR_DUPLICATE, "您已加入或已提交申请"); return; }
 
-    /* 4. 依据加入权限决定状态 */
-    const char *status = utils_str_equal(join_perm, "free") ? "approved" : "pending";
+    /* 4. 处理文件上传（可选） */
+    char attachment[256] = "";
+    api_save_uploaded_file(ctx, "attachment", "storage/receipts",
+                           attachment, sizeof(attachment));
 
-    int rc = db_execute(
-        "INSERT INTO members (club_id, user_id, role, join_status, joined_at) "
-        "VALUES (%d, %d, 'member', '%s', NOW())",
-        club_id, uid, status);
+    /* 5. 依据加入权限决定状态 */
+    const char *status = utils_str_equal(join_perm, "free") ? "approved" : "pending";
+    char *e_attachment = attachment[0] ? db_escape(attachment) : NULL;
+
+    int rc;
+    if (e_attachment) {
+        rc = db_execute(
+            "INSERT INTO members (club_id, user_id, role, join_status, joined_at, attachment) "
+            "VALUES (%d, %d, 'member', '%s', NOW(), '%s')",
+            club_id, uid, status, e_attachment);
+        free(e_attachment);
+    } else {
+        rc = db_execute(
+            "INSERT INTO members (club_id, user_id, role, join_status, joined_at) "
+            "VALUES (%d, %d, 'member', '%s', NOW())",
+            club_id, uid, status);
+    }
     if (rc < 0) { api_error(ctx, ERR_DB, "加入失败"); return; }
 
     if (utils_str_equal(status, "approved")) {
@@ -144,9 +160,11 @@ void stu_my_clubs(ApiContext *ctx) {
     int uid = ctx->user->user_id;
 
     MYSQL_RES *res = db_query(
-        "SELECT c.club_id, c.club_name, c.category, c.level, c.logo_path, "
-        "m.role, m.join_status, m.joined_at "
+        "SELECT c.club_id, c.club_name, c.category, c.level, c.logo_path, c.member_count, "
+        "m.role, m.join_status, DATE_FORMAT(m.joined_at,'%%Y-%%m-%%d') AS join_date, "
+        "COALESCE(col.college_name,'') AS college_name "
         "FROM members m JOIN clubs c ON m.club_id=c.club_id "
+        "LEFT JOIN colleges col ON c.college_id=col.college_id "
         "WHERE m.user_id=%d AND m.left_at IS NULL "
         "ORDER BY m.joined_at DESC", uid);
 

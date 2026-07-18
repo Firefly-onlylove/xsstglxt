@@ -30,6 +30,7 @@ void stu_club_browse(ApiContext *ctx) {
     api_get_param(ctx, "category", category, sizeof(category));
     api_get_param(ctx, "level",    level,    sizeof(level));
     int page = api_get_int(ctx, "page", 1);
+    int uid = ctx->user ? ctx->user->user_id : 0;
     if (page < 1) page = 1;
     int page_size = PAGE_SIZE_DEFAULT;
     int offset = (page - 1) * page_size;
@@ -60,13 +61,18 @@ void stu_club_browse(ApiContext *ctx) {
     MYSQL_RES *res = db_query(
         "SELECT c.club_id, c.club_name, c.category, c.level, c.description, "
         "c.member_count, c.logo_path, COALESCE(col.college_name,'') AS college_name, "
-        "COALESCE(u.real_name,'') AS president_name "
+        "COALESCE(u.real_name,'') AS president_name, "
+        "(SELECT COUNT(*) FROM activities a "
+        " WHERE a.club_id=c.club_id AND a.status IN ('published','ongoing')) AS activity_count, "
+        "(SELECT m.join_status FROM members m "
+        " WHERE m.club_id=c.club_id AND m.user_id=%d AND m.left_at IS NULL "
+        " LIMIT 1) AS join_status "
         "FROM clubs c "
         "LEFT JOIN colleges col ON c.college_id=col.college_id "
         "LEFT JOIN users u ON c.president_id=u.user_id "
         "%s ORDER BY c.member_count DESC, c.club_id "
         "LIMIT %d OFFSET %d",
-        where, page_size, offset);
+        uid, where, page_size, offset);
 
     api_send_result_paged(ctx, res, page, page_size, total);
 }
@@ -75,16 +81,20 @@ void stu_club_browse(ApiContext *ctx) {
 void stu_club_detail(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
+    int uid = ctx->user ? ctx->user->user_id : 0;
 
     MYSQL_RES *res = db_query(
         "SELECT c.club_id, c.club_name, c.description, c.category, c.level, "
         "c.logo_path, c.advisor, c.member_count, c.join_permission, c.status, "
         "COALESCE(col.college_name,'') AS college_name, "
-        "COALESCE(u.real_name,'') AS president_name "
+        "COALESCE(u.real_name,'') AS president_name, "
+        "COALESCE(m.role,'') AS my_role, "
+        "COALESCE(m.join_status,'not_joined') AS join_status "
         "FROM clubs c "
         "LEFT JOIN colleges col ON c.college_id=col.college_id "
         "LEFT JOIN users u ON c.president_id=u.user_id "
-        "WHERE c.club_id=%d", club_id);
+        "LEFT JOIN members m ON m.club_id=c.club_id AND m.user_id=%d AND m.left_at IS NULL "
+        "WHERE c.club_id=%d", uid, club_id);
 
     if (!res) { api_error(ctx, ERR_DB, "查询失败"); return; }
     if (mysql_num_rows(res) == 0) {
@@ -102,7 +112,8 @@ void stu_club_members(ApiContext *ctx) {
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
 
     MYSQL_RES *res = db_query(
-        "SELECT m.member_id, u.real_name, m.role, m.joined_at "
+        "SELECT m.member_id, u.real_name, m.role, "
+        "DATE_FORMAT(m.joined_at,'%%Y-%%m-%%d') AS join_date "
         "FROM members m JOIN users u ON m.user_id=u.user_id "
         "WHERE m.club_id=%d AND m.join_status='approved' AND m.left_at IS NULL "
         "ORDER BY FIELD(m.role,'president','vice_president','secretary','treasurer','member'), "

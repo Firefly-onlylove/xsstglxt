@@ -54,19 +54,19 @@ const rejectVisible = ref(false); const rejectReason = ref(''); const currentApp
 const { clubId } = useClub()
 
 const memberCols = [
-  { prop: 'real_name',  label: '姓名',   width: 100 },
-  { prop: 'student_id', label: '学号',   width: 120 },
-  { prop: 'class_name', label: '班级' },
-  { slot: 'role',       label: '角色',   width: 100 },
-  { prop: 'join_date',  label: '加入时间', width: 120 },
-  { slot: 'actions',    label: '操作',   width: 160, fixed: 'right' }
+  { prop: 'real_name',   label: '姓名',   width: 100 },
+  { prop: 'student_no',  label: '学号',   width: 120 },
+  { prop: 'college_name',label: '学院' },
+  { slot: 'role',        label: '角色',   width: 100 },
+  { prop: 'join_date',   label: '加入时间', width: 120 },
+  { slot: 'actions',     label: '操作',   width: 160, fixed: 'right' }
 ]
 const appCols = [
-  { prop: 'real_name',  label: '申请人',  width: 100 },
-  { prop: 'student_id', label: '学号',    width: 120 },
-  { prop: 'class_name', label: '班级' },
-  { prop: 'created_at', label: '申请时间', width: 160 },
-  { slot: 'actions',    label: '操作',    width: 130, fixed: 'right' }
+  { prop: 'real_name',   label: '申请人',   width: 100 },
+  { prop: 'student_no',  label: '学号',     width: 120 },
+  { prop: 'college_name',label: '学院' },
+  { prop: 'applied_at',  label: '申请时间',  width: 160 },
+  { slot: 'actions',     label: '操作',     width: 130, fixed: 'right' }
 ]
 
 const roleLabel = r => ({ president:'社长', vice_president:'副社长', member:'成员' }[r] || r)
@@ -98,7 +98,7 @@ async function removeMember(row) {
 }
 async function approve(row, pass) {
   if (pass) {
-    const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + row.request_id + '/approve', { approved: true })
+    const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + row.member_id + '/approve')
     if (res.code === 0) { ElMessage.success('已通过'); loadApplications() }
     return
   }
@@ -107,8 +107,8 @@ async function approve(row, pass) {
 function openReject(row) { currentApp.value = row; rejectReason.value = ''; rejectVisible.value = true }
 async function doReject() {
   if (!rejectReason.value) { ElMessage.warning('请填写拒绝理由'); return }
-  const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + currentApp.value.request_id + '/reject',
-    { approved: false, reason: rejectReason.value })
+  const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + currentApp.value.member_id + '/reject',
+    { reason: rejectReason.value })
   if (res.code === 0) { ElMessage.success('已拒绝'); rejectVisible.value = false; loadApplications() }
 }
 const loadAll = () => { if (activeTab.value === 'members') loadMembers(); else loadApplications() }

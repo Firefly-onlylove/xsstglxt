@@ -59,8 +59,8 @@ void club_member_list(ApiContext *ctx) {
 
     MYSQL_RES *res = db_query(
         "SELECT m.member_id, m.user_id, u.real_name, u.student_no, u.phone, "
-        "m.role, m.joined_at, "
-        "COALESCE(col.college_name,'') AS college_name "
+        "m.role, DATE_FORMAT(m.joined_at,'%%Y-%%m-%%d') AS join_date, "
+        "COALESCE(col.college_name,'') AS college_name, m.attachment "
         "FROM members m JOIN users u ON m.user_id=u.user_id "
         "LEFT JOIN colleges col ON u.college_id=col.college_id "
         "WHERE m.club_id=%d AND m.join_status='approved' AND m.left_at IS NULL "
@@ -78,7 +78,8 @@ void club_join_pending(ApiContext *ctx) {
 
     MYSQL_RES *res = db_query(
         "SELECT m.member_id, m.user_id, u.real_name, u.student_no, u.phone, "
-        "m.joined_at AS applied_at, COALESCE(col.college_name,'') AS college_name "
+        "DATE_FORMAT(m.joined_at,'%%Y-%%m-%%d %%H:%%i') AS applied_at, "
+        "COALESCE(col.college_name,'') AS college_name, m.attachment "
         "FROM members m JOIN users u ON m.user_id=u.user_id "
         "LEFT JOIN colleges col ON u.college_id=col.college_id "
         "WHERE m.club_id=%d AND m.join_status='pending' "

@@ -5,6 +5,7 @@
  * 覆盖处理函数（函数名/路由严格对齐 routes.h）：
  *   stu_activity_list      GET  /api/activities              全部可报名活动（分页）
  *   stu_activity_detail    GET  /api/activities/{id}         活动详情
+ *   stu_activity_registrations GET /api/activities/{id}/registrations 报名列表
  *   stu_activity_register  POST /api/activities/{id}/register 报名
  *   stu_activity_cancel    POST /api/activities/{id}/cancel   取消报名
  *   stu_activity_signin    POST /api/activities/{id}/signin   活动码签到
@@ -34,6 +35,7 @@ void stu_activity_list(ApiContext *ctx) {
     if (page < 1) page = 1;
     int page_size = PAGE_SIZE_DEFAULT;
     int offset = (page - 1) * page_size;
+    int uid = ctx->user ? ctx->user->user_id : 0;
 
     int total = db_query_int(
         "SELECT COUNT(*) FROM activities "
@@ -42,11 +44,14 @@ void stu_activity_list(ApiContext *ctx) {
     MYSQL_RES *res = db_query(
         "SELECT a.activity_id, a.title, a.location, a.start_time, a.end_time, "
         "a.max_participants, a.current_count, a.status, "
-        "c.club_name, c.club_id "
+        "c.club_name, c.club_id, c.join_permission, "
+        "(SELECT r.status FROM registrations r "
+        " WHERE r.activity_id=a.activity_id AND r.user_id=%d "
+        " AND r.status!='cancelled' LIMIT 1) AS my_status "
         "FROM activities a JOIN clubs c ON a.club_id=c.club_id "
         "WHERE a.status IN ('published','ongoing') "
         "ORDER BY a.start_time LIMIT %d OFFSET %d",
-        page_size, offset);
+        uid, page_size, offset);
 
     api_send_result_paged(ctx, res, page, page_size, total);
 }
@@ -56,12 +61,17 @@ void stu_activity_detail(ApiContext *ctx) {
     int aid = api_get_path_int(ctx, 1);
     if (aid <= 0) { api_error(ctx, ERR_INPUT, "活动ID非法"); return; }
 
+    int uid = ctx->user ? ctx->user->user_id : 0;
     MYSQL_RES *res = db_query(
-        "SELECT a.activity_id, a.title, a.description, a.location, "
-        "a.start_time, a.end_time, a.signup_deadline, a.max_participants, "
-        "a.current_count, a.status, c.club_name, c.club_id "
+        "SELECT a.activity_id, a.title, a.description, "
+        "a.location, a.start_time, a.end_time, a.signup_deadline, "
+        "a.max_participants, a.current_count, a.status, "
+        "c.club_name, c.club_id, c.join_permission, "
+        "(SELECT r.status FROM registrations r "
+        " WHERE r.activity_id=a.activity_id AND r.user_id=%d "
+        " AND r.status!='cancelled' LIMIT 1) AS my_status "
         "FROM activities a JOIN clubs c ON a.club_id=c.club_id "
-        "WHERE a.activity_id=%d", aid);
+        "WHERE a.activity_id=%d", uid, aid);
 
     if (!res || mysql_num_rows(res) == 0) {
         if (res) mysql_free_result(res);
@@ -69,6 +79,19 @@ void stu_activity_detail(ApiContext *ctx) {
         return;
     }
     api_send_result_data(ctx, res);
+}
+
+/* GET /api/activities/{id}/registrations — 活动报名列表 */
+void stu_activity_registrations(ApiContext *ctx) {
+    int aid = api_get_path_int(ctx, 1);
+    if (aid <= 0) { api_error(ctx, ERR_INPUT, "活动ID非法"); return; }
+
+    MYSQL_RES *res = db_query(
+        "SELECT r.user_id, u.real_name, r.status, r.registered_at "
+        "FROM registrations r JOIN users u ON r.user_id=u.user_id "
+        "WHERE r.activity_id=%d AND r.status!='cancelled' "
+        "ORDER BY r.registered_at", aid);
+    api_send_result(ctx, res);
 }
 
 /* POST /api/activities/{id}/register — 报名 */
@@ -87,8 +110,10 @@ void stu_activity_register(ApiContext *ctx) {
 
     /* 2. 取活动信息：名额、状态、报名截止 */
     MYSQL_RES *res = db_query(
-        "SELECT max_participants, current_count, status, signup_deadline "
-        "FROM activities WHERE activity_id=%d", aid);
+        "SELECT a.max_participants, a.current_count, a.status, a.signup_deadline, "
+        "c.join_permission, c.club_id "
+        "FROM activities a JOIN clubs c ON a.club_id=c.club_id "
+        "WHERE a.activity_id=%d", aid);
     if (!res || mysql_num_rows(res) == 0) {
         if (res) mysql_free_result(res);
         api_error(ctx, ERR_NOT_FOUND, "活动不存在");
@@ -98,6 +123,8 @@ void stu_activity_register(ApiContext *ctx) {
     int max_p = atoi(row[0]);
     int cur   = atoi(row[1]);
     char status[16]; utils_strlcpy(status, row[2] ? row[2] : "", sizeof(status));
+    char join_perm[16]; utils_strlcpy(join_perm, row[4] ? row[4] : "all", sizeof(join_perm));
+    int act_club_id = row[5] ? atoi(row[5]) : 0;
     mysql_free_result(res);
 
     if (!utils_str_equal(status, "published")) {
@@ -107,13 +134,22 @@ void stu_activity_register(ApiContext *ctx) {
         api_error(ctx, ERR_STATUS, "报名名额已满"); return;
     }
 
-    /* 3. 重复报名检查 */
+    /* 3. 检查社团加入权限：仅限本社团成员报名 */
+    if (utils_str_equal(join_perm, "members_only")) {
+        int is_member = db_query_int(
+            "SELECT COUNT(*) FROM members "
+            "WHERE club_id=%d AND user_id=%d AND join_status='approved' AND left_at IS NULL",
+            act_club_id, uid);
+        if (!is_member) { api_error(ctx, ERR_PERMISSION, "该活动仅限本社团成员报名"); return; }
+    }
+
+    /* 4. 重复报名检查 */
     int dup = db_query_int(
         "SELECT COUNT(*) FROM registrations "
         "WHERE activity_id=%d AND user_id=%d AND status!='cancelled'", aid, uid);
     if (dup > 0) { api_error(ctx, ERR_DUPLICATE, "您已报名该活动"); return; }
 
-    /* 4. 写报名记录 + 名额 +1 */
+    /* 5. 写报名记录 + 名额 +1 */
     db_execute("INSERT INTO registrations (activity_id, user_id, status, registered_at) "
                "VALUES (%d, %d, 'registered', NOW())", aid, uid);
     db_execute("UPDATE activities SET current_count=current_count+1 WHERE activity_id=%d", aid);
