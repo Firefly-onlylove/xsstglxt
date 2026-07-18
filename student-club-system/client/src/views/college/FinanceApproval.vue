@@ -85,7 +85,7 @@ const statusType  = s => ({ college_pending:'warning', school_pending:'primary',
 
 async function loadData() {
   loading.value = true
-  const res = await api.get('/api/college/reimbursements', {
+  const res = await api.get('/api/college/reimbursements/pending', {
     status: activeTab.value === 'pending' ? 'college_pending' : undefined,
     page: page.value, page_size: 10
   })
@@ -95,7 +95,7 @@ async function loadData() {
 function onPage(e) { page.value = e.page; loadData() }
 async function openDetail(row) {
   current.value = row
-  const res = await api.get('/api/college/reimb-limit')
+  const res = await api.get('/api/college/limits')
   if (res.code === 0) availableLimit.value = res.data.available
   detailVisible.value = true
 }
@@ -112,8 +112,8 @@ async function approve(row, pass) {
 async function doReject() {
   if (!rejectReason.value) { ElMessage.warning('请填写驳回理由'); return }
   submitting.value = true
-  const res = await api.post('/api/college/reimbursements/' + current.value.reimb_id + '/approve',
-    { approved: false, reason: rejectReason.value })
+  const res = await api.post('/api/college/reimbursements/' + current.value.reimb_id + '/reject',
+    { reason: rejectReason.value })
   submitting.value = false
   if (res.code === 0) { ElMessage.success('已驳回'); rejectVisible.value = false; loadData() }
 }

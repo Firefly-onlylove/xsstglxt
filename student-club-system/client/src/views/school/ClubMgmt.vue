@@ -101,7 +101,7 @@ function openDetail(row) { current.value = row; detailVisible.value = true }
 function openSetLevel(row) { current.value = row; levelVal.value = row.level || 1; levelVisible.value = true }
 
 async function doSetLevel() {
-  const res = await api.put('/api/school/clubs/' + current.value.club_id + '/level', { level: levelVal.value })
+  const res = await api.post('/api/school/clubs/' + current.value.club_id + '/level', { level: levelVal.value })
   if (res.code === 0) { ElMessage.success('设置成功'); levelVisible.value = false; loadData() }
 }
 
@@ -117,7 +117,7 @@ async function dissolve(row) {
 
 onMounted(async () => {
   const res = await api.get('/api/school/colleges')
-  if (res.code === 0) colleges.value = res.data || []
+  if (res.code === 0) colleges.value = res.data.list || []
   loadData()
 })
 </script>

@@ -91,7 +91,7 @@ void pub_register(ApiContext *ctx) {
         api_error(ctx, ERR_VALIDATION, "请填写真实姓名"); return;
     }
     if (!utils_validate_student_no(student_no)) {
-        api_error(ctx, ERR_VALIDATION, "学号必须为10位数字"); return;
+        api_error(ctx, ERR_VALIDATION, "学号格式不正确"); return;
     }
     if (!utils_validate_id_card(id_card)) {
         api_error(ctx, ERR_VALIDATION, "身份证号格式不正确（18位）"); return;

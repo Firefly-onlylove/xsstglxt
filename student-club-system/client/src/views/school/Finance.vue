@@ -106,7 +106,7 @@ const reimbStatusType  = s => ({ school_pending:'warning', college_pending:'warn
 
 async function loadReimb() {
   loading.value = true
-  const res = await api.get('/api/school/reimbursements', { page: reimbPage.value, page_size: 10, ...reimbFilter.value })
+  const res = await api.get('/api/school/reimbursements/pending', { page: reimbPage.value, page_size: 10, ...reimbFilter.value })
   loading.value = false
   if (res.code === 0) { reimbData.value = res.data.list || []; reimbTotal.value = res.data.total || 0 }
 }
@@ -116,7 +116,7 @@ function openReimbDetail(row) { currentReimb.value = row; reimbVisible.value = t
 async function approveReimb(row, pass) {
   if (!pass) {
     const { value: reason } = await ElMessageBox.prompt('驳回理由', '驳回', { inputValidator: v => v ? true : '请填写理由' })
-    const res = await api.post('/api/school/reimbursements/' + row.reimb_id + '/approve', { approved: false, reason })
+    const res = await api.post('/api/school/reimbursements/' + row.reimb_id + '/reject', { reason })
     if (res.code === 0) { ElMessage.success('已驳回'); loadReimb() }
     return
   }
@@ -126,7 +126,7 @@ async function approveReimb(row, pass) {
 }
 
 onMounted(async () => {
-  const ov = await api.get('/api/school/finance-overview')
+  const ov = await api.get('/api/school/finance')
   if (ov.code === 0) {
     overview.value[0].value = '¥' + ov.data.total_income
     overview.value[1].value = '¥' + ov.data.total_expense

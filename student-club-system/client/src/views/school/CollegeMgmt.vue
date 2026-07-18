@@ -70,13 +70,13 @@ const majorFields   = [{ prop: 'name', label: '专业名称', placeholder: '请�
 
 async function loadColleges() {
   const res = await api.get('/api/school/colleges')
-  if (res.code === 0) colleges.value = res.data || []
+  if (res.code === 0) colleges.value = res.data.list || []
 }
 async function selectCollege(row) {
   selectedCollege.value = row
   if (!row) return
   const res = await api.get('/api/school/majors', { college_id: row.college_id })
-  if (res.code === 0) majors.value = res.data || []
+  if (res.code === 0) majors.value = res.data.list || []
 }
 
 function openCollegeForm(row) {

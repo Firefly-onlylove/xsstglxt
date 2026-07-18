@@ -60,11 +60,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/api'
+import { useClub } from '@/composables/useClub'
 
 const router = useRouter()
+const { clubId } = useClub()
 const stats = ref([
   { label: '社团成员',   value: null, icon: 'UserFilled',     color: '#1677FF', bg: '#E6F4FF' },
   { label: '本月新增',   value: null, icon: 'Plus',           color: '#36CFC9', bg: '#E6FFFB' },
@@ -79,8 +81,9 @@ const pendingReimb = ref(0)
 const actStatusLabel = s => ({ draft:'草稿', published:'报名中', ongoing:'进行中', finished:'已结束', cancelled:'已取消' }[s] || s)
 const actStatusType  = s => ({ published:'primary', ongoing:'success', finished:'info', cancelled:'danger' }[s] || '')
 
-onMounted(async () => {
-  const res = await api.get('/api/club-admin/dashboard')
+async function loadDashboard() {
+  if (!clubId.value) return
+  const res = await api.get('/api/club/' + clubId.value + '/dashboard')
   if (res.code === 0) {
     const d = res.data
     stats.value[0].value = d.member_count
@@ -91,6 +94,13 @@ onMounted(async () => {
     recentActivities.value = d.recent_activities || []
     pendingJoins.value = d.pending_joins || 0
     pendingReimb.value = d.pending_reimb || 0
+  }
+}
+
+onMounted(() => {
+  if (clubId.value) loadDashboard()
+  else {
+    const stop = watch(clubId, (val) => { if (val) { stop(); loadDashboard() } })
   }
 })
 </script>

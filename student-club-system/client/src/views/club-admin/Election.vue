@@ -92,10 +92,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { api } from '@/api'
 import { ElMessage } from 'element-plus'
 import DataTable from '@/components/DataTable.vue'
+import { useClub } from '@/composables/useClub'
 
 const loading = ref(false)
 const elections = ref([]); const elecTotal = ref(0); const elecPage = ref(1)
@@ -104,6 +105,7 @@ const isCandidate = ref(false); const hasVoted = ref(false)
 const selectedCandidate = ref(null)
 const createVisible = ref(false); const createForm = ref()
 const form = ref({ title: '', signup_start: '', vote_start: '', vote_end: '' })
+const { clubId } = useClub()
 
 const elecCols = [
   { prop: 'title',     label: '选举标题' },
@@ -118,8 +120,9 @@ const maxVotes = computed(() => Math.max(...candidates.value.map(c => c.vote_cou
 const votePercent = (count) => Math.round((count / maxVotes.value) * 100)
 
 async function loadData() {
+  if (!clubId.value) return
   loading.value = true
-  const res = await api.get('/api/club-admin/elections', { page: elecPage.value, page_size: 10 })
+  const res = await api.get('/api/club/' + clubId.value + '/elections', { page: elecPage.value, page_size: 10 })
   loading.value = false
   if (res.code === 0) { elections.value = res.data.list || []; elecTotal.value = res.data.total || 0 }
 }
@@ -127,7 +130,7 @@ function onPage(e) { elecPage.value = e.page; loadData() }
 
 async function openDetail(row) {
   currentElec.value = row
-  const res = await api.get('/api/club-admin/elections/' + row.election_id + '/candidates')
+  const res = await api.get('/api/club/' + clubId.value + '/elections/' + row.election_id + '/candidates')
   if (res.code === 0) {
     candidates.value = res.data.candidates || []
     isCandidate.value = res.data.is_candidate || false
@@ -136,13 +139,13 @@ async function openDetail(row) {
 }
 
 async function applyCandidate() {
-  const res = await api.post('/api/club-admin/elections/' + currentElec.value.election_id + '/apply')
+  const res = await api.post('/api/club/' + clubId.value + '/elections/' + currentElec.value.election_id + '/signup')
   if (res.code === 0) { ElMessage.success('报名成功'); isCandidate.value = true }
   else ElMessage.error(res.msg)
 }
 
 async function submitVote() {
-  const res = await api.post('/api/club-admin/elections/' + currentElec.value.election_id + '/vote',
+  const res = await api.post('/api/club/' + clubId.value + '/elections/' + currentElec.value.election_id + '/vote',
     { candidate_id: selectedCandidate.value })
   if (res.code === 0) { ElMessage.success('投票成功'); hasVoted.value = true }
   else ElMessage.error(res.msg)
@@ -151,12 +154,17 @@ async function submitVote() {
 function openCreate() { form.value = { title: '', signup_start: '', vote_start: '', vote_end: '' }; createVisible.value = true }
 async function doCreate() {
   await createForm.value.validate()
-  const res = await api.post('/api/club-admin/elections', form.value)
+  const res = await api.post('/api/club/' + clubId.value + '/elections', form.value)
   if (res.code === 0) { ElMessage.success('选举已发起'); createVisible.value = false; loadData() }
   else ElMessage.error(res.msg)
 }
 
-onMounted(loadData)
+onMounted(() => {
+  if (clubId.value) loadData()
+  else {
+    const stop = watch(clubId, (val) => { if (val) { stop(); loadData() } })
+  }
+})
 </script>
 
 <style scoped>

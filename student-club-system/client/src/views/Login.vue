@@ -53,15 +53,15 @@
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="学号" prop="student_id">
-              <el-input v-model="regData.student_id" />
+            <el-form-item label="学号" prop="student_no">
+              <el-input v-model="regData.student_no" />
             </el-form-item>
             <el-row :gutter="12">
               <el-col :span="8">
                 <el-form-item label="学院" prop="college_id">
                   <el-select v-model="regData.college_id" placeholder="选择学院" style="width:100%"
                     @change="loadMajors">
-                    <el-option v-for="c in colleges" :key="c.college_id" :label="c.name" :value="c.college_id" />
+                    <el-option v-for="c in colleges" :key="c.college_id" :label="c.college_name" :value="c.college_id" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -69,20 +69,20 @@
                 <el-form-item label="专业" prop="major_id">
                   <el-select v-model="regData.major_id" placeholder="选择专业" style="width:100%"
                     @change="loadClasses">
-                    <el-option v-for="m in majors" :key="m.major_id" :label="m.name" :value="m.major_id" />
+                    <el-option v-for="m in majors" :key="m.major_id" :label="m.major_name" :value="m.major_id" />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="班级" prop="class_id">
                   <el-select v-model="regData.class_id" placeholder="选择班级" style="width:100%">
-                    <el-option v-for="cls in classes" :key="cls.class_id" :label="cls.name" :value="cls.class_id" />
+                    <el-option v-for="cls in classes" :key="cls.class_id" :label="cls.class_name" :value="cls.class_id" />
                   </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
             <el-form-item label="手机号" prop="phone">
-              <el-input v-model="regData.phone" placeholder="选填" />
+              <el-input v-model="regData.phone" placeholder="请输入手机号" />
             </el-form-item>
             <div v-if="regError" class="error-msg">{{ regError }}</div>
             <el-button type="primary" size="large" :loading="loading" style="width:100%;margin-top:4px"
@@ -123,7 +123,7 @@ const classes   = ref([])
 const loginData = ref({ username: '', password: '' })
 const regData   = ref({
   username: '', password: '', confirm_password: '',
-  real_name: '', student_id: '', college_id: null,
+  real_name: '', student_no: '', college_id: null,
   major_id: null, class_id: null, phone: ''
 })
 
@@ -137,10 +137,11 @@ const regRules = {
   confirm_password: [{ required: true, validator: (r, v, cb) =>
       v !== regData.value.password ? cb('两次密码不一致') : cb() }],
   real_name:  [{ required: true, message: '请输入姓名' }],
-  student_id: [{ required: true, message: '请输入学号' }],
+  student_no: [{ required: true, message: '请输入学号' }, { pattern: /^\d{10}$/, message: '学号必须为10位数字' }],
   college_id: [{ required: true, message: '请选择学院' }],
   major_id:   [{ required: true, message: '请选择专业' }],
-  class_id:   [{ required: true, message: '请选择班级' }]
+  class_id:   [{ required: true, message: '请选择班级' }],
+  phone:      [{ required: true, message: '请输入手机号' }, { pattern: /^1\d{10}$/, message: '手机号格式不正确' }]
 }
 
 async function doLogin() {
@@ -160,7 +161,7 @@ async function doRegister() {
   loading.value = true
   regError.value = ''
   try {
-    const res = await api.post('/api/student/register', regData.value)
+    const res = await api.post('/api/register', regData.value)
     if (res.code !== 0) { regError.value = res.msg || '注册失败'; return }
     ElMessage.success('注册成功，请登录')
     mode.value = 'login'
@@ -175,21 +176,21 @@ async function loadMajors() {
   majors.value = []
   classes.value = []
   if (!regData.value.college_id) return
-  const res = await api.get('/api/school/majors', { college_id: regData.value.college_id })
-  if (res.code === 0) majors.value = res.data || []
+  const res = await api.get('/api/majors', { college_id: regData.value.college_id })
+  if (res.code === 0) majors.value = res.data.list || []
 }
 
 async function loadClasses() {
   regData.value.class_id = null
   classes.value = []
   if (!regData.value.major_id) return
-  const res = await api.get('/api/school/classes', { major_id: regData.value.major_id })
-  if (res.code === 0) classes.value = res.data || []
+  const res = await api.get('/api/classes', { major_id: regData.value.major_id })
+  if (res.code === 0) classes.value = res.data.list || []
 }
 
 onMounted(async () => {
-  const res = await api.get('/api/school/colleges')
-  if (res.code === 0) colleges.value = res.data || []
+  const res = await api.get('/api/colleges')
+  if (res.code === 0) colleges.value = res.data.list || []
 })
 </script>
 

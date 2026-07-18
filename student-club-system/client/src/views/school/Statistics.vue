@@ -79,12 +79,12 @@ const typeStats      = ref([])
 const monthlyActivity = ref([])
 
 async function exportData() {
-  const res = await api.get('/api/school/statistics/export')
+  const res = await api.get('/api/school/stats/export')
   if (res.code === 0) ElMessage.success('报表已导出')
 }
 
 onMounted(async () => {
-  const res = await api.get('/api/school/statistics')
+  const res = await api.get('/api/school/stats')
   if (res.code === 0) {
     const d = res.data
     summary.value[0].value = d.total_clubs

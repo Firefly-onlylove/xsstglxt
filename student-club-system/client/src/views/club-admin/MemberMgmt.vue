@@ -40,16 +40,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DataTable from '@/components/DataTable.vue'
+import { useClub } from '@/composables/useClub'
 
 const activeTab = ref('members')
 const loading = ref(false)
 const members = ref([]); const memberTotal = ref(0); const memberPage = ref(1)
 const applications = ref([]); const appTotal = ref(0); const appPage = ref(1)
 const rejectVisible = ref(false); const rejectReason = ref(''); const currentApp = ref(null)
+const { clubId } = useClub()
 
 const memberCols = [
   { prop: 'real_name',  label: '姓名',   width: 100 },
@@ -71,30 +73,32 @@ const roleLabel = r => ({ president:'社长', vice_president:'副社长', member
 const roleType  = r => ({ president:'danger', vice_president:'warning', member:'' }[r] || '')
 
 async function loadMembers() {
+  if (!clubId.value) return
   loading.value = true
-  const res = await api.get('/api/club-admin/members', { page: memberPage.value, page_size: 10 })
+  const res = await api.get('/api/club/' + clubId.value + '/members', { page: memberPage.value, page_size: 10 })
   loading.value = false
   if (res.code === 0) { members.value = res.data.list || []; memberTotal.value = res.data.total || 0 }
 }
 async function loadApplications() {
+  if (!clubId.value) return
   loading.value = true
-  const res = await api.get('/api/club-admin/join-requests', { page: appPage.value, page_size: 10 })
+  const res = await api.get('/api/club/' + clubId.value + '/join-requests', { page: appPage.value, page_size: 10 })
   loading.value = false
   if (res.code === 0) { applications.value = res.data.list || []; appTotal.value = res.data.total || 0 }
 }
 async function promoteVP(row) {
   await ElMessageBox.confirm(`确认任命 ${row.real_name} 为副社长？`, '提示', { type: 'warning' })
-  const res = await api.put('/api/club-admin/members/' + row.user_id + '/role', { role: 'vice_president' })
+  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.user_id + '/appoint', { role: 'vice_president' })
   if (res.code === 0) { ElMessage.success('已任命'); loadMembers() }
 }
 async function removeMember(row) {
   await ElMessageBox.confirm(`确认将 ${row.real_name} 移出社团？`, '提示', { type: 'warning' })
-  const res = await api.delete('/api/club-admin/members/' + row.user_id)
+  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.user_id + '/remove')
   if (res.code === 0) { ElMessage.success('已移出'); loadMembers() }
 }
 async function approve(row, pass) {
   if (pass) {
-    const res = await api.post('/api/club-admin/join-requests/' + row.request_id + '/approve', { approved: true })
+    const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + row.request_id + '/approve', { approved: true })
     if (res.code === 0) { ElMessage.success('已通过'); loadApplications() }
     return
   }
@@ -103,9 +107,16 @@ async function approve(row, pass) {
 function openReject(row) { currentApp.value = row; rejectReason.value = ''; rejectVisible.value = true }
 async function doReject() {
   if (!rejectReason.value) { ElMessage.warning('请填写拒绝理由'); return }
-  const res = await api.post('/api/club-admin/join-requests/' + currentApp.value.request_id + '/approve',
+  const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + currentApp.value.request_id + '/reject',
     { approved: false, reason: rejectReason.value })
   if (res.code === 0) { ElMessage.success('已拒绝'); rejectVisible.value = false; loadApplications() }
 }
-onMounted(loadMembers)
+const loadAll = () => { if (activeTab.value === 'members') loadMembers(); else loadApplications() }
+
+onMounted(() => {
+  if (clubId.value) loadAll()
+  else {
+    const stop = watch(clubId, (val) => { if (val) { stop(); loadAll() } })
+  }
+})
 </script>

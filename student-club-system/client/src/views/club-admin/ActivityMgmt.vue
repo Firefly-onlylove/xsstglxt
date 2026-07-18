@@ -89,15 +89,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FilterBar from '@/components/FilterBar.vue'
 import DataTable from '@/components/DataTable.vue'
+import { useClub } from '@/composables/useClub'
 
 const loading = ref(false); const submitting = ref(false)
 const tableData = ref([]); const total = ref(0); const page = ref(1)
 const filters = ref({ status: '' })
+const { clubId } = useClub()
 const formVisible = ref(false); const signinVisible = ref(false)
 const editing = ref(null); const current = ref(null)
 const actFormRef = ref(); const signinList = ref([])
@@ -126,8 +128,9 @@ const actStatusLabel = s => ({ draft:'草稿', published:'已发布', ongoing:'�
 const actStatusType  = s => ({ draft:'info', published:'primary', ongoing:'success', finished:'', cancelled:'danger' }[s] || '')
 
 async function loadData() {
+  if (!clubId.value) return
   loading.value = true
-  const res = await api.get('/api/club-admin/activities', { page: page.value, page_size: 10, ...filters.value })
+  const res = await api.get('/api/club/' + clubId.value + '/activities', { page: page.value, page_size: 10, ...filters.value })
   loading.value = false
   if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.data.total || 0 }
 }
@@ -142,7 +145,7 @@ function openEdit(row) {
 async function saveActivity() {
   await actFormRef.value.validate()
   submitting.value = true
-  const url = editing.value?.activity_id ? '/api/club-admin/activities/' + editing.value.activity_id : '/api/club-admin/activities'
+  const url = editing.value?.activity_id ? '/api/club/' + clubId.value + '/activities/' + editing.value.activity_id : '/api/club/' + clubId.value + '/activities'
   const method = editing.value?.activity_id ? 'put' : 'post'
   const res = await api[method](url, actForm.value)
   submitting.value = false
@@ -152,30 +155,36 @@ async function saveActivity() {
 async function changeStatus(row, status) {
   const labels = { published:'发布', ongoing:'开始', finished:'结束' }
   await ElMessageBox.confirm(`确认${labels[status]}活动 ${row.title}？`, '提示', { type: 'warning' })
-  const res = await api.put('/api/club-admin/activities/' + row.activity_id + '/status', { status })
+  const url = '/api/club/' + clubId.value + '/activities/' + row.activity_id + '/' + (status === 'published' ? 'publish' : status === 'ongoing' ? 'start' : 'finish')
+  const res = await api.post(url)
   if (res.code === 0) { ElMessage.success('操作成功'); loadData() }
 }
 async function openCancel(row) {
   const { value: reason } = await ElMessageBox.prompt('取消原因', '取消活动', { inputValidator: v => v ? true : '请填写原因' })
-  const res = await api.put('/api/club-admin/activities/' + row.activity_id + '/status', { status: 'cancelled', reason })
+  const res = await api.post('/api/club/' + clubId.value + '/activities/' + row.activity_id + '/cancel', { reason })
   if (res.code === 0) { ElMessage.success('已取消'); loadData() }
 }
 async function deleteActivity(row) {
   await ElMessageBox.confirm('确认删除？', '提示', { type: 'warning' })
-  const res = await api.delete('/api/club-admin/activities/' + row.activity_id)
+  const res = await api.delete('/api/club/' + clubId.value + '/activities/' + row.activity_id)
   if (res.code === 0) { ElMessage.success('已删除'); loadData() }
 }
 async function openSignin(row) {
   current.value = row
-  const res = await api.get('/api/club-admin/activities/' + row.activity_id + '/registrations')
-  if (res.code === 0) signinList.value = res.data || []
+  const res = await api.get('/api/club/' + clubId.value + '/activities/' + row.activity_id + '/signins')
+  if (res.code === 0) signinList.value = res.data.list || []
   signinVisible.value = true
 }
 async function manualSignin() {
   const { value: keyword } = await ElMessageBox.prompt('输入学号或姓名', '手动签到')
-  const res = await api.post('/api/club-admin/activities/' + current.value.activity_id + '/manual-signin', { keyword })
+  const res = await api.post('/api/club/' + clubId.value + '/activities/' + current.value.activity_id + '/manual-signin', { keyword })
   if (res.code === 0) { ElMessage.success('签到成功'); openSignin(current.value) }
   else ElMessage.error(res.msg)
 }
-onMounted(loadData)
+onMounted(() => {
+  if (clubId.value) loadData()
+  else {
+    const stop = watch(clubId, (val) => { if (val) { stop(); loadData() } })
+  }
+})
 </script>

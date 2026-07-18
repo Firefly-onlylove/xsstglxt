@@ -84,7 +84,7 @@ function openDetail(row) { current.value = row; detailVisible.value = true }
 async function openMembers(row) {
   current.value = row
   const res = await api.get('/api/college/clubs/' + row.club_id + '/members')
-  if (res.code === 0) members.value = res.data || []
+  if (res.code === 0) members.value = res.data.list || []
   membersVisible.value = true
 }
 onMounted(loadData)

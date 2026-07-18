@@ -136,7 +136,7 @@ function openDetail(row) { current.value = row; detailVisible.value = true }
 async function toggleStatus(row) {
   const action = row.status === 'disabled' ? '启用' : '禁用'
   await ElMessageBox.confirm(`确认${action}用户 ${row.real_name}？`, '提示', { type: 'warning' })
-  const res = await api.post('/api/school/users/' + row.user_id + '/toggle-status')
+  const res = await api.post('/api/school/users/' + row.user_id + '/toggle')
   if (res.code === 0) { ElMessage.success(action + '成功'); loadData() }
 }
 
@@ -161,14 +161,14 @@ function openCreateAdmin() {
 }
 
 async function doCreateAdmin(data) {
-  const res = await api.post('/api/school/users/create-admin', data)
+  const res = await api.post('/api/school/users/college-admin', data)
   if (res.code === 0) { ElMessage.success('创建成功'); createModal.value.close(); loadData() }
   else ElMessage.error(res.msg)
 }
 
 onMounted(async () => {
   const res = await api.get('/api/school/colleges')
-  if (res.code === 0) colleges.value = res.data || []
+  if (res.code === 0) colleges.value = res.data.list || []
   loadData()
 })
 </script>

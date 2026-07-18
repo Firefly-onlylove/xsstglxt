@@ -95,7 +95,7 @@ const actStatusType  = s => ({ published:'primary', ongoing:'success', finished:
 
 async function joinClub() {
   joining.value = true
-  const res = await api.post('/api/student/clubs/' + route.params.id + '/join')
+  const res = await api.post('/api/clubs/' + route.params.id + '/join')
   joining.value = false
   if (res.code === 0) { ElMessage.success('申请已提交，等待审核'); joinStatus.value = 'pending' }
   else ElMessage.error(res.msg)
@@ -103,7 +103,7 @@ async function joinClub() {
 
 async function leaveClub() {
   await ElMessageBox.confirm('确认退出该社团？', '提示', { type: 'warning' })
-  const res = await api.post('/api/student/clubs/' + route.params.id + '/leave')
+  const res = await api.post('/api/clubs/' + route.params.id + '/leave')
   if (res.code === 0) { ElMessage.success('已退出'); joinStatus.value = 'not_joined' }
 }
 
@@ -111,16 +111,16 @@ onMounted(async () => {
   loading.value = true
   const id = route.params.id
   const [clubRes, membersRes, actRes, annRes] = await Promise.all([
-    api.get('/api/student/clubs/' + id),
-    api.get('/api/student/clubs/' + id + '/members'),
-    api.get('/api/student/clubs/' + id + '/activities'),
-    api.get('/api/student/clubs/' + id + '/announcements')
+    api.get('/api/clubs/' + id),
+    api.get('/api/clubs/' + id + '/members'),
+    api.get('/api/clubs/' + id + '/activities'),
+    api.get('/api/clubs/' + id + '/announcements')
   ])
   loading.value = false
   if (clubRes.code === 0) { club.value = clubRes.data; joinStatus.value = clubRes.data.join_status }
-  if (membersRes.code === 0) members.value = membersRes.data || []
-  if (actRes.code === 0) activities.value = actRes.data || []
-  if (annRes.code === 0) announcements.value = annRes.data || []
+  if (membersRes.code === 0) members.value = membersRes.data.list || []
+  if (actRes.code === 0) activities.value = actRes.data.list || []
+  if (annRes.code === 0) announcements.value = annRes.data.list || []
 })
 </script>
 

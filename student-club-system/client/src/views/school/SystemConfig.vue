@@ -58,7 +58,7 @@ const backups = ref([])
 
 async function saveConfig() {
   saving.value = true
-  const res = await api.put('/api/school/config', config.value)
+  const res = await api.post('/api/school/config', config.value)
   saving.value = false
   if (res.code === 0) ElMessage.success('配置已保存')
   else ElMessage.error(res.msg)
@@ -76,7 +76,7 @@ function downloadBackup(row) { window.open('/api/school/backup/download/' + row.
 
 async function loadBackups() {
   const res = await api.get('/api/school/backups')
-  if (res.code === 0) backups.value = res.data || []
+  if (res.code === 0) backups.value = res.data.list || []
 }
 
 onMounted(async () => {

@@ -374,7 +374,7 @@ void api_send_result(ApiContext *ctx, MYSQL_RES *res) {
     char *json = db_result_to_json_array(res);
     mysql_free_result(res);
     if (!json) { api_error(ctx, ERR_SYSTEM, "内存不足"); return; }
-    api_send_json(ctx, json);
+    api_ok_data(ctx, json);
     free(json);
 }
 

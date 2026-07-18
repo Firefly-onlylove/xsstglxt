@@ -91,7 +91,7 @@ const roleLabel = r => ({ school_admin:'学校管理员', college_admin:'学院�
 
 async function saveProfile() {
   saving.value = true
-  const res = await api.put('/api/student/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email, student_id: form.value.student_id })
+  const res = await api.put('/api/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email, student_id: form.value.student_id })
   saving.value = false
   if (res.code === 0) { ElMessage.success('保存成功'); editing.value = false }
   else ElMessage.error(res.msg)
@@ -99,7 +99,7 @@ async function saveProfile() {
 
 async function changePwd() {
   await pwdFormRef.value.validate()
-  const res = await api.put('/api/student/password', { old_password: pwdForm.value.old_password, new_password: pwdForm.value.new_password })
+  const res = await api.post('/api/profile/password', { old_password: pwdForm.value.old_password, new_password: pwdForm.value.new_password })
   if (res.code === 0) { ElMessage.success('密码已修改'); pwdForm.value = { old_password:'', new_password:'', confirm_password:'' } }
   else ElMessage.error(res.msg)
 }

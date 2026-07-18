@@ -163,12 +163,11 @@ int utils_validate_student_no(const char *s) {
 }
 
 int utils_validate_id_card(const char *s) {
-    if (!s) return 0;
-    size_t len = strlen(s);
-    if (len != 18) return 0;
+    if (!s) return 1; /* 选填字段，空值放行 */
+    if (strlen(s) == 0) return 1;
+    if (strlen(s) != 18) return 0;
     for (int i = 0; i < 17; ++i)
         if (!isdigit((unsigned char)s[i])) return 0;
-    /* 末位可为数字或 X/x */
     char last = s[17];
     if (!isdigit((unsigned char)last) && last != 'X' && last != 'x') return 0;
     return 1;

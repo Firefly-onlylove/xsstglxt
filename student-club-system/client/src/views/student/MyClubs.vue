@@ -62,8 +62,8 @@ const roleType  = r => ({ president:'danger', vice_president:'warning', member:'
 onMounted(async () => {
   loading.value = true
   const [clubRes, appRes] = await Promise.all([
-    api.get('/api/student/my-clubs'),
-    api.get('/api/student/club-applications')
+    api.get('/api/my/clubs'),
+    api.get('/api/my/applications')
   ])
   loading.value = false
   if (clubRes.code === 0) clubs.value = clubRes.data || []

@@ -82,8 +82,8 @@
         <el-form-item label="用途" prop="purpose" :rules="[{required:true}]">
           <el-input v-model="reimbForm.purpose" type="textarea" :rows="2" />
         </el-form-item>
-        <el-form-item label="发票" prop="receipt" :rules="[{required:true,message:'请上传发票'}]">
-          <el-upload action="/api/club-admin/upload-receipt" :on-success="onUploadSuccess" :limit="1" accept="image/*">
+        <el-form-item label="发票">
+          <el-upload :action="uploadUrl" :on-success="onUploadSuccess" :limit="1" accept="image/*">
             <el-button type="primary" plain>上传发票图片</el-button>
           </el-upload>
           <span v-if="reimbForm.receipt_path" style="font-size:12px;color:#36CFC9">已上传</span>
@@ -98,11 +98,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FilterBar from '@/components/FilterBar.vue'
 import DataTable from '@/components/DataTable.vue'
+import { useClub } from '@/composables/useClub'
 
 const activeTab = ref('records')
 const loading = ref(false)
@@ -118,6 +119,9 @@ const addRecordVisible = ref(false); const reimbVisible = ref(false)
 const recFormRef = ref(); const reimbFormRef = ref()
 const recForm   = ref({ type: 'income', amount: 0, description: '', date: '' })
 const reimbForm = ref({ amount: 0, purpose: '', receipt_path: '' })
+const { clubId } = useClub()
+
+const uploadUrl = computed(() => '/api/club/' + clubId.value + '/upload-receipt')
 
 const recCols = [
   { prop: 'date',        label: '日期',   width: 120 },
@@ -137,43 +141,48 @@ const reimbStatusLabel = s => ({ college_pending:'院级待审', school_pending:
 const reimbStatusType  = s => ({ college_pending:'warning', school_pending:'primary', approved:'success', rejected:'danger' }[s] || '')
 
 async function loadRecords() {
+  if (!clubId.value) return
   loading.value = true
-  const res = await api.get('/api/club-admin/finance', { page: recPage.value, page_size: 10, ...recFilter.value })
+  const res = await api.get('/api/club/' + clubId.value + '/finance')
   loading.value = false
-  if (res.code === 0) { records.value = res.data.list || []; recTotal.value = res.data.total || 0 }
+  if (res.code === 0) {
+    summary.value[0].value = '¥' + res.data.income
+    summary.value[1].value = '¥' + res.data.expense
+    summary.value[2].value = '¥' + res.data.balance
+    records.value = res.data.records || []
+    recTotal.value = records.value.length
+  }
 }
 async function loadReimbs() {
+  if (!clubId.value) return
   loading.value = true
-  const res = await api.get('/api/club-admin/reimbursements', { page: reimbPage.value, page_size: 10 })
+  const res = await api.get('/api/club/' + clubId.value + '/reimbursements', { page: reimbPage.value, page_size: 10 })
   loading.value = false
   if (res.code === 0) { reimbs.value = res.data.list || []; reimbTotal.value = res.data.total || 0 }
 }
 function openAddRecord() { recForm.value = { type: 'income', amount: 0, description: '', date: '' }; addRecordVisible.value = true }
 async function saveRecord() {
   await recFormRef.value.validate()
-  const res = await api.post('/api/club-admin/finance', recForm.value)
+  const res = await api.post('/api/club/' + clubId.value + '/finance', recForm.value)
   if (res.code === 0) { ElMessage.success('已添加'); addRecordVisible.value = false; loadRecords() }
 }
 async function deleteRecord(row) {
   await ElMessageBox.confirm('确认删除该记录？', '提示', { type: 'warning' })
-  const res = await api.delete('/api/club-admin/finance/' + row.record_id)
+  const res = await api.delete('/api/club/' + clubId.value + '/finance/' + row.finance_id)
   if (res.code === 0) { ElMessage.success('已删除'); loadRecords() }
 }
 function onUploadSuccess(res) { if (res.code === 0) reimbForm.value.receipt_path = res.data.path }
 async function submitReimb() {
   await reimbFormRef.value.validate()
   if (!reimbForm.value.receipt_path) { ElMessage.warning('请先上传发票'); return }
-  const res = await api.post('/api/club-admin/reimbursements', reimbForm.value)
+  const res = await api.post('/api/club/' + clubId.value + '/reimbursements', reimbForm.value)
   if (res.code === 0) { ElMessage.success('申请已提交'); reimbVisible.value = false; loadReimbs() }
 }
-onMounted(async () => {
-  const res = await api.get('/api/club-admin/finance-overview')
-  if (res.code === 0) {
-    summary.value[0].value = '¥' + res.data.total_income
-    summary.value[1].value = '¥' + res.data.total_expense
-    summary.value[2].value = '¥' + res.data.balance
-    summary.value[3].value = res.data.pending_reimb
+
+onMounted(() => {
+  if (clubId.value) loadRecords()
+  else {
+    const stop = watch(clubId, (val) => { if (val) { stop(); loadRecords() } })
   }
-  loadRecords()
 })
 </script>

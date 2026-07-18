@@ -94,21 +94,21 @@ const actStatusLabel = s => ({ draft:'草稿', published:'报名中', ongoing:'�
 const actStatusType  = s => ({ published:'primary', ongoing:'success', finished:'info', cancelled:'danger' }[s] || '')
 
 async function doRegister() {
-  const res = await api.post('/api/student/activities/' + route.params.id + '/register')
+  const res = await api.post('/api/activities/' + route.params.id + '/register')
   if (res.code === 0) { ElMessage.success('报名成功'); myStatus.value = 'registered'; loadData() }
   else ElMessage.error(res.msg)
 }
 
 async function cancelRegister() {
   await ElMessageBox.confirm('确认取消报名？', '提示', { type: 'warning' })
-  const res = await api.post('/api/student/activities/' + route.params.id + '/cancel-register')
+  const res = await api.post('/api/activities/' + route.params.id + '/cancel')
   if (res.code === 0) { ElMessage.success('已取消'); myStatus.value = 'cancelled' }
 }
 
 async function doSignin() {
   if (!signinCode.value) { ElMessage.warning('请输入签到码'); return }
   signing.value = true
-  const res = await api.post('/api/student/activities/' + route.params.id + '/signin', { code: signinCode.value })
+  const res = await api.post('/api/activities/' + route.params.id + '/signin', { code: signinCode.value })
   signing.value = false
   if (res.code === 0) { ElMessage.success('签到成功！'); myStatus.value = 'signed_in' }
   else ElMessage.error(res.msg || '签到码错误')
@@ -118,12 +118,12 @@ async function loadData() {
   loading.value = true
   const id = route.params.id
   const [actRes, regRes] = await Promise.all([
-    api.get('/api/student/activities/' + id),
-    api.get('/api/student/activities/' + id + '/registrations')
+    api.get('/api/activities/' + id),
+    api.get('/api/activities/' + id + '/registrations')
   ])
   loading.value = false
   if (actRes.code === 0) { activity.value = actRes.data; myStatus.value = actRes.data.my_status || 'not_registered' }
-  if (regRes.code === 0) registrations.value = regRes.data || []
+  if (regRes.code === 0) registrations.value = regRes.data.list || []
 }
 
 onMounted(loadData)

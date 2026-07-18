@@ -75,7 +75,7 @@ const rules = {
 async function doSubmit() {
   await formRef.value.validate()
   submitting.value = true
-  const res = await api.post('/api/student/club-apply', form.value)
+  const res = await api.post('/api/clubs/apply', form.value)
   submitting.value = false
   if (res.code === 0) {
     ElMessage.success('申请已提交，等待学校管理员审批')
@@ -85,13 +85,13 @@ async function doSubmit() {
 }
 
 async function loadMyApplications() {
-  const res = await api.get('/api/student/my-club-applications')
-  if (res.code === 0) myApplications.value = res.data || []
+  const res = await api.get('/api/my/applications')
+  if (res.code === 0) myApplications.value = res.data.list || []
 }
 
 onMounted(async () => {
-  const res = await api.get('/api/school/colleges')
-  if (res.code === 0) colleges.value = res.data || []
+  const res = await api.get('/api/colleges')
+  if (res.code === 0) colleges.value = res.data.list || []
   loadMyApplications()
 })
 </script>

@@ -84,8 +84,8 @@ async function deleteClass(row) {
 
 import { computed } from 'vue'
 onMounted(async () => {
-  const res = await api.get('/api/college/majors')
-  if (res.code === 0) majors.value = res.data || []
+  const res = await api.get('/api/majors', { college_id: '' })
+  if (res.code === 0) majors.value = res.data.list || []
   loadData()
 })
 </script>

@@ -1,0 +1,1 @@
+import{a as u,r as n}from"./index-C12iI-wL.js";const e=n(null);function c(){return e.value||u.get("/api/my/clubs").then(i=>{if(i.code===0){const l=(i.data.list||[]).find(t=>t.my_role==="president"||t.my_role==="vice_president");l&&(e.value=l.club_id)}}),{clubId:e}}export{c as u};

@@ -51,7 +51,7 @@ const typeColor = t => ({ system:'#1677FF', club:'#36CFC9', activity:'#FF7D00', 
 
 async function loadData() {
   loading.value = true
-  const res = await api.get('/api/student/notifications', {
+  const res = await api.get('/api/notifications', {
     page: page.value, page_size: 10,
     type: activeTab.value || undefined
   })
@@ -65,14 +65,14 @@ async function loadData() {
 
 async function readMsg(msg) {
   if (!msg.is_read) {
-    await api.post('/api/student/notifications/' + msg.notif_id + '/read')
+    await api.post('/api/notifications/read', { notification_id: msg.notif_id })
     msg.is_read = true
     unreadCount.value = Math.max(0, unreadCount.value - 1)
   }
 }
 
 async function markAllRead() {
-  const res = await api.post('/api/student/notifications/read-all')
+  const res = await api.post('/api/notifications/read-all')
   if (res.code === 0) { ElMessage.success('已全部标记已读'); loadData() }
 }
 

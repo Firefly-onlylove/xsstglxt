@@ -96,7 +96,7 @@ const userInitial = computed(() => (user.value?.real_name || user.value?.usernam
 async function loadUser() {
   const res = await api.get('/api/me')
   if (res.code === 0) user.value = res.data
-  const nr = await api.get('/api/student/notifications', { page: 1, page_size: 1 })
+  const nr = await api.get('/api/notifications', { page: 1, page_size: 1 })
   if (nr.code === 0) unreadCount.value = nr.data?.unread_count || 0
 }
 

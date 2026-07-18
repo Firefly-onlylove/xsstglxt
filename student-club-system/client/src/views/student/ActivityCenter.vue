@@ -61,15 +61,15 @@ const myStatusLabel  = s => ({ registered:'已报名', signed_in:'已签到', ca
 
 async function loadData() {
   loading.value = true
-  const res = await api.get('/api/student/activities', { page: page.value, page_size: 9, ...filters.value })
+  const res = await api.get('/api/activities', { page: page.value, page_size: 9, ...filters.value })
   loading.value = false
   if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.data.total || 0 }
 }
 function onReset() { filters.value = { status: '', club_id: null }; loadData() }
 
 onMounted(async () => {
-  const res = await api.get('/api/student/my-clubs')
-  if (res.code === 0) myClubs.value = res.data || []
+  const res = await api.get('/api/my/clubs')
+  if (res.code === 0) myClubs.value = res.data.list || []
   loadData()
 })
 </script>

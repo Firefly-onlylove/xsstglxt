@@ -66,15 +66,15 @@ const joinStatusType  = s => ({ not_joined: 'primary', pending: 'warning', joine
 
 async function loadData() {
   loading.value = true
-  const res = await api.get('/api/student/clubs', { page: page.value, page_size: 12, ...filters.value })
+  const res = await api.get('/api/clubs', { page: page.value, page_size: 12, ...filters.value })
   loading.value = false
   if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.data.total || 0 }
 }
 function onReset() { filters.value = { keyword: '', club_type: '', college_id: null }; loadData() }
 
 onMounted(async () => {
-  const res = await api.get('/api/school/colleges')
-  if (res.code === 0) colleges.value = res.data || []
+  const res = await api.get('/api/colleges')
+  if (res.code === 0) colleges.value = res.data.list || []
   loadData()
 })
 </script>

@@ -89,12 +89,12 @@ async function doRestrict() {
 }
 async function removeRestrict(row) {
   await ElMessageBox.confirm('确认解除该学生的限制？', '提示', { type: 'warning' })
-  const res = await api.post('/api/college/students/' + row.user_id + '/unrestrict')
+  const res = await api.post('/api/college/students/' + row.user_id + '/lift-restriction')
   if (res.code === 0) { ElMessage.success('已解除'); loadData() }
 }
 onMounted(async () => {
-  const res = await api.get('/api/college/classes-all')
-  if (res.code === 0) classes.value = res.data || []
+  const res = await api.get('/api/college/classes')
+  if (res.code === 0) classes.value = res.data.list || []
   loadData()
 })
 </script>

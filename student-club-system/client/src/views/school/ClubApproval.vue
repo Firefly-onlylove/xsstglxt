@@ -99,7 +99,7 @@ const statusType  = s => ({ pending: 'warning', approved: 'success', rejected: '
 
 async function loadData() {
   loading.value = true
-  const res = await api.get('/api/school/club-approvals', {
+  const res = await api.get('/api/school/clubs/pending', {
     status: activeTab.value === 'pending' ? 'pending' : 'all',
     page: page.value, page_size: 10, ...filters.value
   })
@@ -120,7 +120,7 @@ function openReject(row) {
 
 async function approve(row, pass) {
   await ElMessageBox.confirm(`确认${pass ? '通过' : '驳回'}该社团申请？`, '提示', { type: 'warning' })
-  const res = await api.post('/api/school/club-approvals/' + row.club_id + '/approve', { approved: pass })
+  const res = await api.post('/api/school/clubs/' + row.club_id + '/approve', { approved: pass })
   if (res.code === 0) { ElMessage.success('操作成功'); detailVisible.value = false; loadData() }
   else ElMessage.error(res.msg)
 }
@@ -128,7 +128,7 @@ async function approve(row, pass) {
 async function doReject() {
   await rejectForm.value.validate()
   submitting.value = true
-  const res = await api.post('/api/school/club-approvals/' + current.value.club_id + '/reject',
+  const res = await api.post('/api/school/clubs/' + current.value.club_id + '/reject',
     { reason: rejectData.value.reason })
   submitting.value = false
   if (res.code === 0) { ElMessage.success('已驳回'); rejectVisible.value = false; loadData() }
