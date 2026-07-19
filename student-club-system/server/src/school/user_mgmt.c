@@ -65,6 +65,8 @@ void sch_user_list(ApiContext *ctx) {
             strncat(where, " AND u.status=1", sizeof(where) - strlen(where) - 1);
         } else if (utils_str_equal(status, "0")) {
             strncat(where, " AND u.status=0", sizeof(where) - strlen(where) - 1);
+        } else if (utils_str_equal(status, "restricted") || utils_str_equal(status, "2")) {
+            strncat(where, " AND u.status=2", sizeof(where) - strlen(where) - 1);
         }
     }
 
@@ -149,14 +151,27 @@ void sch_user_toggle(ApiContext *ctx) {
     if (id == ctx->user->user_id) { api_error(ctx, ERR_STATUS, "不能禁用自己"); return; }
 
     int cur_status = db_query_int("SELECT status FROM users WHERE user_id=%d", id);
-    int new_status = (cur_status == 0) ? 1 : 0;
+    int new_status;
+    if (cur_status == 0) {
+        /* 启用时检查用户是否仍有活跃限制，有则设为限制态(2) */
+        int has_restrict = db_query_int("SELECT COUNT(*) FROM user_restrictions WHERE user_id=%d AND is_active=1", id);
+        new_status = (has_restrict > 0) ? 2 : 1;
+    } else {
+        /* 正常(1)或限制态(2) -> 禁用 */
+        new_status = 0;
+    }
     int ok = db_execute("UPDATE users SET status=%d WHERE user_id=%d", new_status, id);
     if (ok <= 0) { api_error(ctx, ERR_DB, "操作失败"); return; }
 
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
                "VALUES (%d, 'toggle_user', 'users', %d, '切换用户状态')",
                ctx->user->user_id, id);
-    api_ok_msg(ctx, new_status == 1 ? "已启用" : "已禁用");
+    if (new_status == 1)
+        api_ok_msg(ctx, "已启用");
+    else if (new_status == 2)
+        api_ok_msg(ctx, "已启用（有限制）");
+    else
+        api_ok_msg(ctx, "已禁用");
 }
 
 /* POST /api/school/users/{id}/reset-password  body: new_password（缺省重置为 123456） */
@@ -212,6 +227,8 @@ void sch_user_restrict(ApiContext *ctx) {
             id, type, ctx->user->user_id, start, end, er);
     }
     free(er);
+    /* 同步更新用户状态为限制态 */
+    db_execute("UPDATE users SET status=2 WHERE user_id=%d", id);
     if (ok < 0) { api_error(ctx, ERR_DB, "施加限制失败"); return; }
 
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
@@ -237,6 +254,10 @@ void sch_user_lift_restrict(ApiContext *ctx) {
         "UPDATE user_restrictions SET is_active=0 "
         "WHERE restriction_id=%d AND user_id=%d AND is_active=1", rid, uid);
     if (ok <= 0) { api_error(ctx, ERR_NOT_FOUND, "限制不存在或已解除"); return; }
+    /* 检查是否已无活跃限制，无则恢复为正常状态 */
+    int remain = db_query_int("SELECT COUNT(*) FROM user_restrictions WHERE user_id=%d AND is_active=1", uid);
+    if (remain == 0)
+        db_execute("UPDATE users SET status=1 WHERE user_id=%d AND status=2", uid);
 
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
                "VALUES (%d, 'lift_restriction', 'user_restrictions', %d, '解除限制')",

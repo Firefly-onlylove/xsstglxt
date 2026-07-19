@@ -133,12 +133,12 @@ function onPage(e) { page.value = e.page; loadData() }
 function openDetail(row) { current.value = row; detailVisible.value = true }
 
 async function toggleStatus(row) {
-  const action = row.status != 1 ? '启用' : '禁用'
+  const action = row.status == 0 ? '启用' : '禁用'
   await ElMessageBox.confirm(`确认${action}用户 ${row.real_name}？`, '提示', { type: 'warning' })
   const res = await api.post('/api/school/users/' + row.user_id + '/toggle')
   if (res.code === 0) {
     // 乐观更新：立即切换本地状态，确保UI即时响应
-    row.status = row.status != 1 ? 1 : 0
+    row.status = row.status == 0 ? 1 : 0
     ElMessage.success(action + '成功')
     loadData()
   } else { ElMessage.error(res.msg || '操作失败') }
