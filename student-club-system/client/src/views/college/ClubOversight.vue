@@ -13,9 +13,9 @@
     </DataTable>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" :title="current?.name" width="560px">
+    <el-dialog v-model="detailVisible" :title="current?.club_name" width="560px">
       <el-descriptions :column="2" border v-if="current">
-        <el-descriptions-item label="类型">{{ current.club_type }}</el-descriptions-item>
+        <el-descriptions-item label="类型">{{ current.category }}</el-descriptions-item>
         <el-descriptions-item label="等级">{{ current.level || '未评级' }}</el-descriptions-item>
         <el-descriptions-item label="社长">{{ current.president_name }}</el-descriptions-item>
         <el-descriptions-item label="成员数">{{ current.member_count }}</el-descriptions-item>
@@ -26,7 +26,7 @@
     </el-dialog>
 
     <!-- 成员弹窗 -->
-    <el-dialog v-model="membersVisible" :title="current?.name + ' — 成员列表'" width="600px">
+    <el-dialog v-model="membersVisible" :title="current?.club_name + ' — 成员列表'" width="600px">
       <el-table :data="members" size="small" border>
         <el-table-column prop="real_name" label="姓名" width="100" />
         <el-table-column prop="student_id" label="学号" width="120" />
@@ -61,8 +61,8 @@ const membersVisible = ref(false)
 const members = ref([])
 
 const columns = [
-  { prop: 'name',           label: '社团名称' },
-  { prop: 'club_type',      label: '类型',   width: 80 },
+  { prop: 'club_name',      label: '社团名称' },
+  { prop: 'category',       label: '类型',   width: 80 },
   { prop: 'president_name', label: '社长',   width: 100 },
   { prop: 'member_count',   label: '成员数', width: 80 },
   { prop: 'activity_count', label: '活动数', width: 80 },

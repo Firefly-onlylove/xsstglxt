@@ -33,7 +33,9 @@ void col_club_list(ApiContext *ctx) {
         char *e = db_escape(search);
         MYSQL_RES *res = db_query(
             "SELECT c.club_id, c.club_name, c.category, c.level, "
-            "c.member_count, c.status, u.real_name AS president_name "
+            "c.member_count, c.status, u.real_name AS president_name, "
+            "(SELECT COUNT(*) FROM activities WHERE activities.club_id=c.club_id AND status IN ('published','ongoing','completed')) AS activity_count, "
+            "DATE_FORMAT(c.created_at,'%%Y-%%m-%%d') AS created_at "
             "FROM clubs c LEFT JOIN users u ON c.president_id=u.user_id "
             "WHERE (c.college_id=%d OR c.level='school') "
             "AND c.status='approved' AND c.club_name LIKE '%%%s%%' "
@@ -43,7 +45,9 @@ void col_club_list(ApiContext *ctx) {
     } else {
         MYSQL_RES *res = db_query(
             "SELECT c.club_id, c.club_name, c.category, c.level, "
-            "c.member_count, c.status, u.real_name AS president_name "
+            "c.member_count, c.status, u.real_name AS president_name, "
+            "(SELECT COUNT(*) FROM activities WHERE activities.club_id=c.club_id AND status IN ('published','ongoing','completed')) AS activity_count, "
+            "DATE_FORMAT(c.created_at,'%%Y-%%m-%%d') AS created_at "
             "FROM clubs c LEFT JOIN users u ON c.president_id=u.user_id "
             "WHERE (c.college_id=%d OR c.level='school') "
             "AND c.status='approved' "

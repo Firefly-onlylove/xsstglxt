@@ -66,7 +66,7 @@ void stu_club_browse(ApiContext *ctx) {
         " WHERE a.club_id=c.club_id AND a.status IN ('published','ongoing')) AS activity_count, "
         "(SELECT m.join_status FROM members m "
         " WHERE m.club_id=c.club_id AND m.user_id=%d AND m.left_at IS NULL "
-        " LIMIT 1) AS join_status "
+        " AND m.join_status IN ('pending','approved') LIMIT 1) AS join_status "
         "FROM clubs c "
         "LEFT JOIN colleges col ON c.college_id=col.college_id "
         "LEFT JOIN users u ON c.president_id=u.user_id "
@@ -93,7 +93,8 @@ void stu_club_detail(ApiContext *ctx) {
         "FROM clubs c "
         "LEFT JOIN colleges col ON c.college_id=col.college_id "
         "LEFT JOIN users u ON c.president_id=u.user_id "
-        "LEFT JOIN members m ON m.club_id=c.club_id AND m.user_id=%d AND m.left_at IS NULL "
+        "LEFT JOIN members m ON m.club_id=c.club_id AND m.user_id=%d "
+        "AND m.left_at IS NULL AND m.join_status IN ('pending','approved') "
         "WHERE c.club_id=%d", uid, club_id);
 
     if (!res) { api_error(ctx, ERR_DB, "查询失败"); return; }

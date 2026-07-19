@@ -34,9 +34,10 @@
 void sch_user_list(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
 
-    char role[32] = "", kw[64] = "";
+    char role[32] = "", kw[64] = "", status[32] = "";
     api_get_param(ctx, "role", role, sizeof(role));
     api_get_param(ctx, "keyword", kw, sizeof(kw));
+    api_get_param(ctx, "status", status, sizeof(status));
     int page = api_get_int(ctx, "page", 1);
     if (page < 1) page = 1;
     int page_size = PAGE_SIZE_DEFAULT;
@@ -58,6 +59,13 @@ void sch_user_list(ApiContext *ctx) {
                  " AND (u.real_name LIKE '%%%s%%' OR u.student_no LIKE '%%%s%%')", ek, ek);
         strncat(where, frag, sizeof(where) - strlen(where) - 1);
         free(ek);
+    }
+    if (status[0]) {
+        if (utils_str_equal(status, "1")) {
+            strncat(where, " AND u.status=1", sizeof(where) - strlen(where) - 1);
+        } else if (utils_str_equal(status, "0")) {
+            strncat(where, " AND u.status=0", sizeof(where) - strlen(where) - 1);
+        }
     }
 
     int total = db_query_int("SELECT COUNT(*) FROM users u %s", where);
@@ -133,31 +141,22 @@ void sch_user_create_college_admin(ApiContext *ctx) {
     api_ok_msg(ctx, "学院管理员已创建");
 }
 
-/* POST /api/school/users/{id}/toggle  切换 status：active ↔ disabled */
+/* POST /api/school/users/{id}/toggle  切换 status：1 ↔ 0 */
 void sch_user_toggle(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
     int id = api_get_path_int(ctx, 2);
     if (id <= 0) { api_error(ctx, ERR_INPUT, "用户ID非法"); return; }
     if (id == ctx->user->user_id) { api_error(ctx, ERR_STATUS, "不能禁用自己"); return; }
 
-    char cur_status[32] = "";
-    MYSQL_RES *res = db_query("SELECT status FROM users WHERE user_id=%d", id);
-    if (!res || mysql_num_rows(res) == 0) {
-        if (res) mysql_free_result(res);
-        api_error(ctx, ERR_NOT_FOUND, "用户不存在"); return;
-    }
-    MYSQL_ROW row = mysql_fetch_row(res);
-    if (row[0]) utils_strlcpy(cur_status, row[0], sizeof(cur_status));
-    mysql_free_result(res);
-
-    const char *new_status = utils_str_equal(cur_status, "disabled") ? "active" : "disabled";
-    int ok = db_execute("UPDATE users SET status='%s' WHERE user_id=%d", new_status, id);
+    int cur_status = db_query_int("SELECT status FROM users WHERE user_id=%d", id);
+    int new_status = (cur_status == 0) ? 1 : 0;
+    int ok = db_execute("UPDATE users SET status=%d WHERE user_id=%d", new_status, id);
     if (ok <= 0) { api_error(ctx, ERR_DB, "操作失败"); return; }
 
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
                "VALUES (%d, 'toggle_user', 'users', %d, '切换用户状态')",
                ctx->user->user_id, id);
-    api_ok_msg(ctx, utils_str_equal(new_status, "active") ? "已启用" : "已禁用");
+    api_ok_msg(ctx, new_status == 1 ? "已启用" : "已禁用");
 }
 
 /* POST /api/school/users/{id}/reset-password  body: new_password（缺省重置为 123456） */

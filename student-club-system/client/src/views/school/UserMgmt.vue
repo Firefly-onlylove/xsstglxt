@@ -12,11 +12,11 @@
         <el-option label="学生" value="student" />
       </el-select>
       <el-select v-model="filters.college_id" placeholder="学院" clearable style="width:150px">
-        <el-option v-for="c in colleges" :key="c.college_id" :label="c.name" :value="c.college_id" />
+        <el-option v-for="c in colleges" :key="c.college_id" :label="c.college_name" :value="c.college_id" />
       </el-select>
       <el-select v-model="filters.status" placeholder="状态" clearable style="width:110px">
-        <el-option label="正常" value="active" />
-        <el-option label="已禁用" value="disabled" />
+        <el-option label="正常" value="1" />
+        <el-option label="已禁用" value="0" />
         <el-option label="已限制" value="restricted" />
       </el-select>
     </FilterBar>
@@ -26,14 +26,14 @@
         <el-tag size="small" :type="roleType(row.role)">{{ roleLabel(row.role) }}</el-tag>
       </template>
       <template #status="{ row }">
-        <el-tag size="small" :type="row.status === 'active' ? 'success' : 'danger'">
-          {{ row.status === 'active' ? '正常' : row.status === 'disabled' ? '已禁用' : '已限制' }}
+        <el-tag size="small" :type="row.status === 1 ? 'success' : row.status === 0 ? 'danger' : 'warning'">
+          {{ row.status === 1 ? '正常' : row.status === 0 ? '已禁用' : '已限制' }}
         </el-tag>
       </template>
       <template #actions="{ row }">
         <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-        <el-button link :type="row.status === 'disabled' ? 'success' : 'warning'"
-          @click="toggleStatus(row)">{{ row.status === 'disabled' ? '启用' : '禁用' }}</el-button>
+        <el-button link :type="row.status === 0 ? 'success' : 'warning'"
+          @click="toggleStatus(row)">{{ row.status === 0 ? '启用' : '禁用' }}</el-button>
         <el-button link type="info" @click="resetPwd(row)">重置密码</el-button>
         <el-button link type="danger" @click="openRestrict(row)">限制</el-button>
       </template>
@@ -157,7 +157,7 @@ async function doRestrict() {
 }
 
 function openCreateAdmin() {
-  createFields[3].options = colleges.value.map(c => ({ label: c.name, value: c.college_id }))
+  createFields[3].options = colleges.value.map(c => ({ label: c.college_name, value: c.college_id }))
   createModal.value.open({})
 }
 

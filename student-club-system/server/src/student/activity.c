@@ -29,17 +29,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* GET /api/activities?page= — 已发布/进行中的活动 */
+/* GET /api/activities?page=&status=&club_id=&page_size= — 活动列表 */
 void stu_activity_list(ApiContext *ctx) {
     int page = api_get_int(ctx, "page", 1);
     if (page < 1) page = 1;
-    int page_size = PAGE_SIZE_DEFAULT;
+    int page_size = api_get_int(ctx, "page_size", 0);
+    if (page_size <= 0) page_size = PAGE_SIZE_DEFAULT;
     int offset = (page - 1) * page_size;
     int uid = ctx->user ? ctx->user->user_id : 0;
+    char status[32] = "";
+    api_get_param(ctx, "status", status, sizeof(status));
+    int club_id = api_get_int(ctx, "club_id", 0);
+
+    char where[256] = "WHERE a.status IN ('published','ongoing')";
+    if (status[0] && !utils_str_equal(status, "all")) {
+        char *e = db_escape(status);
+        snprintf(where, sizeof(where), "WHERE a.status='%s'", e);
+        free(e);
+    }
+    if (club_id > 0) {
+        char frag[64];
+        snprintf(frag, sizeof(frag), " AND c.club_id=%d", club_id);
+        strncat(where, frag, sizeof(where) - strlen(where) - 1);
+    }
 
     int total = db_query_int(
-        "SELECT COUNT(*) FROM activities "
-        "WHERE status IN ('published','ongoing')");
+        "SELECT COUNT(*) FROM activities a JOIN clubs c ON a.club_id=c.club_id %s", where);
 
     MYSQL_RES *res = db_query(
         "SELECT a.activity_id, a.title, a.location, a.start_time, a.end_time, "
@@ -49,9 +64,8 @@ void stu_activity_list(ApiContext *ctx) {
         " WHERE r.activity_id=a.activity_id AND r.user_id=%d "
         " AND r.status!='cancelled' LIMIT 1) AS my_status "
         "FROM activities a JOIN clubs c ON a.club_id=c.club_id "
-        "WHERE a.status IN ('published','ongoing') "
-        "ORDER BY a.start_time LIMIT %d OFFSET %d",
-        uid, page_size, offset);
+        "%s ORDER BY a.start_time DESC LIMIT %d OFFSET %d",
+        uid, where, page_size, offset);
 
     api_send_result_paged(ctx, res, page, page_size, total);
 }

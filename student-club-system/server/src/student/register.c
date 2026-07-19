@@ -35,15 +35,20 @@ void pub_colleges_list(ApiContext *ctx) {
     api_send_result(ctx, res);
 }
 
-/* GET /api/majors?college_id=X — 某学院下的专业 */
+/* GET /api/majors?college_id=X — 某学院下的专业（无 college_id 或 0 时返回全部） */
 void pub_majors_list(ApiContext *ctx) {
     int college_id = api_get_int(ctx, "college_id", 0);
-    if (college_id <= 0) { api_error(ctx, ERR_INPUT, "缺少 college_id"); return; }
-
-    MYSQL_RES *res = db_query(
-        "SELECT major_id, major_name, major_code "
-        "FROM majors WHERE college_id=%d AND status=1 ORDER BY major_id",
-        college_id);
+    MYSQL_RES *res;
+    if (college_id > 0) {
+        res = db_query(
+            "SELECT major_id, major_name, major_code "
+            "FROM majors WHERE college_id=%d AND status=1 ORDER BY major_id",
+            college_id);
+    } else {
+        res = db_query(
+            "SELECT major_id, major_name, major_code, college_id "
+            "FROM majors WHERE status=1 ORDER BY college_id, major_id");
+    }
     api_send_result(ctx, res);
 }
 

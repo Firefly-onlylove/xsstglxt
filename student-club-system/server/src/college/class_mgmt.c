@@ -30,14 +30,16 @@ void col_class_list(ApiContext *ctx) {
     if (major_id > 0) {
         res = db_query(
             "SELECT cl.class_id, cl.class_name, cl.grade, "
-            "m.major_name, cl.major_id "
+            "m.major_name, cl.major_id, "
+            "(SELECT COUNT(*) FROM users WHERE class_id=cl.class_id) AS student_count "
             "FROM classes cl JOIN majors m ON cl.major_id=m.major_id "
             "WHERE cl.college_id=%d AND cl.major_id=%d AND cl.status=1 "
             "ORDER BY cl.grade DESC, cl.class_name", cid, major_id);
     } else {
         res = db_query(
             "SELECT cl.class_id, cl.class_name, cl.grade, "
-            "m.major_name, cl.major_id "
+            "m.major_name, cl.major_id, "
+            "(SELECT COUNT(*) FROM users WHERE class_id=cl.class_id) AS student_count "
             "FROM classes cl JOIN majors m ON cl.major_id=m.major_id "
             "WHERE cl.college_id=%d AND cl.status=1 "
             "ORDER BY m.major_name, cl.grade DESC", cid);
