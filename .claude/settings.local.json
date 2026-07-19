@@ -85,7 +85,8 @@
       "Bash(iconv *)",
       "Bash(npm --version)",
       "Bash(vite --version)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(git *)"
     ]
   }
 }

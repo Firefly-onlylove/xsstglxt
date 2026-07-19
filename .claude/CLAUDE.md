@@ -98,4 +98,4 @@ if (res.code === 0) {
 
 - 主分支：`1`
 - 远程：`https://github.com/Firefly-onlylove/7.git`
-- Git 操作需从仓库根目录执行：`git -C "C:/7.17实训项目" <command>`
+- Git 操作需从仓库根目录执行：`git -C "C:/7.17sxxm" <command>`
