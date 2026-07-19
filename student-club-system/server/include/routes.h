@@ -200,8 +200,11 @@ void club_signin_manual(ApiContext *ctx);    /* POST /api/club/{id}/activities/{
 
 /* 财务 */
 void club_finance_list(ApiContext *ctx);     /* GET  /api/club/{id}/finance */
+void club_finance_create(ApiContext *ctx);   /* POST /api/club/{id}/finance */
+void club_finance_delete(ApiContext *ctx);   /* DELETE /api/club/{id}/finance/{fid} */
 void club_reimb_list(ApiContext *ctx);       /* GET  /api/club/{id}/reimbursements */
 void club_reimb_create(ApiContext *ctx);     /* POST /api/club/{id}/reimbursements（含发票上传） */
+void club_reimb_upload(ApiContext *ctx);     /* POST /api/club/{id}/upload-receipt（发票上传） */
 
 /* 换届选举 */
 void club_election_list(ApiContext *ctx);    /* GET  /api/club/{id}/elections */

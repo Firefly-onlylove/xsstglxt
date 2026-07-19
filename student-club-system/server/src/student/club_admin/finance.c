@@ -43,6 +43,18 @@ void club_finance_list(ApiContext *ctx) {
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
     if (!club_require_manager(ctx, club_id)) return;
 
+    /* 读取筛选参数 */
+    char filter_type[32] = "";
+    api_get_param(ctx, "type", filter_type, sizeof(filter_type));
+
+    /* 构建 WHERE 条件 */
+    char where[128] = "";
+    if (!utils_is_empty(filter_type)) {
+        char *e_type = db_escape(filter_type);
+        snprintf(where, sizeof(where), "AND type='%s' ", e_type);
+        free(e_type);
+    }
+
     double income = db_query_double(
         "SELECT COALESCE(SUM(amount),0) FROM finance "
         "WHERE club_id=%d AND type='income'", club_id);
@@ -50,12 +62,15 @@ void club_finance_list(ApiContext *ctx) {
         "SELECT COALESCE(SUM(amount),0) FROM finance "
         "WHERE club_id=%d AND type='expense'", club_id);
 
-    /* 明细列表 */
-    MYSQL_RES *res = db_query(
-        "SELECT finance_id, type, amount, description, source, record_time "
-        "FROM finance WHERE club_id=%d ORDER BY record_time DESC", club_id);
+    char sql[512];
+    snprintf(sql, sizeof(sql),
+        "SELECT finance_id, type, amount, description, source, "
+        "DATE_FORMAT(record_time,'%%Y-%%m-%%d') AS date, operator_name "
+        "FROM finance WHERE club_id=%d %s ORDER BY record_time DESC",
+        club_id, where);
 
-    /* 汇总放 meta，明细放 data —— 用带汇总的分页封装亦可，这里直接拼 */
+    MYSQL_RES *res = db_query("%s", sql);
+
     JsonBuilder jb;
     json_init(&jb);
     json_add_double(&jb, "income", income);
@@ -63,6 +78,66 @@ void club_finance_list(ApiContext *ctx) {
     json_add_double(&jb, "balance", income - expense);
     json_add_raw(&jb, "records", db_result_to_json_array(res));
     if (res) mysql_free_result(res);
+    api_ok_data(ctx, json_finish(&jb));
+    json_free(&jb);
+}
+
+/* POST /api/club/{id}/finance — 新增收支记录 */
+void club_finance_create(ApiContext *ctx) {
+    int club_id = api_get_path_int(ctx, 1);
+    if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
+    if (!club_require_manager(ctx, club_id)) return;
+
+    char type[32] = "", description[256] = "";
+    double amount = api_get_json_double(ctx, "amount", 0);
+    api_get_json_str(ctx, "type", type, sizeof(type));
+    api_get_json_str(ctx, "description", description, sizeof(description));
+
+    if (amount <= 0) { api_error(ctx, ERR_VALIDATION, "金额必须大于0"); return; }
+    if (utils_is_empty(type)) { api_error(ctx, ERR_VALIDATION, "请选择收支类型"); return; }
+    if (strcmp(type, "income") != 0 && strcmp(type, "expense") != 0) {
+        api_error(ctx, ERR_VALIDATION, "类型须为income或expense"); return;
+    }
+
+    char *e_desc = db_escape(description);
+    const char *op_name = ctx->user ? ctx->user->real_name : "";
+    int rc = db_execute(
+        "INSERT INTO finance (club_id, type, amount, description, operator_id, operator_name, record_time) "
+        "VALUES (%d, '%s', %.2f, '%s', %d, '%s', NOW())",
+        club_id, type, amount, e_desc,
+        ctx->user ? ctx->user->user_id : 0, op_name);
+    free(e_desc);
+
+    if (rc < 0) { api_error(ctx, ERR_DB, "添加失败"); return; }
+    api_ok_msg(ctx, "已添加");
+}
+
+/* DELETE /api/club/{id}/finance/{fid} — 删除收支记录 */
+void club_finance_delete(ApiContext *ctx) {
+    int club_id = api_get_path_int(ctx, 1);
+    int fid = api_get_path_int(ctx, 3);
+    if (club_id <= 0 || fid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
+    if (!club_require_manager(ctx, club_id)) return;
+
+    int rc = db_execute(
+        "DELETE FROM finance WHERE finance_id=%d AND club_id=%d", fid, club_id);
+    if (rc < 0) { api_error(ctx, ERR_DB, "删除失败"); return; }
+    api_ok_msg(ctx, "已删除");
+}
+
+/* POST /api/club/{id}/upload-receipt — 上传发票图片 */
+void club_reimb_upload(ApiContext *ctx) {
+    int club_id = api_get_path_int(ctx, 1);
+    if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
+    if (!api_require_login(ctx)) return;
+
+    char receipt_path[256] = "";
+    int up = api_save_uploaded_file(ctx, "file", "receipts", receipt_path, sizeof(receipt_path));
+    if (up < 0) { api_error(ctx, ERR_INPUT, "发票图片上传失败"); return; }
+
+    JsonBuilder jb;
+    json_init(&jb);
+    json_add_str(&jb, "path", receipt_path);
     api_ok_data(ctx, json_finish(&jb));
     json_free(&jb);
 }
@@ -128,14 +203,14 @@ void club_reimb_create(ApiContext *ctx) {
     int rc = db_execute(
         "INSERT INTO reimbursement "
         "(club_id, applicant_id, amount, description, receipt_path, status, submitted_at) "
-        "VALUES (%d, %d, %.2f, '%s', '%s', 'pending', NOW())",
+        "VALUES (%d, %d, %.2f, '%s', '%s', 'college_pending', NOW())",
         club_id, ctx->user->user_id, amount, e_desc, e_path);
     free(e_desc); free(e_path);
 
     if (rc < 0) { api_error(ctx, ERR_DB, "提交失败"); return; }
 
     /* 通知本社团所属学院的管理员审核 */
-    int college_id = db_query_int("SELECT college_id FROM clubs WHERE club_id=%d", club_id);
+    int college_id = db_query_int("SELECT college_id FROM colleges c JOIN clubs cl ON c.college_id=cl.college_id WHERE cl.club_id=%d", club_id);
     if (college_id > 0)
         notification_notify_college_admins(college_id, "新的报销申请",
             "有社团提交了报销申请，请前往报销审批处理。", "reimb_apply", club_id);

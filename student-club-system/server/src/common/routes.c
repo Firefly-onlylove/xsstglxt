@@ -184,9 +184,12 @@ static const Route ROUTES[] = {
     { "GET",  "/api/club/*/activities",                 club_activity_list,   1 },
 
     /* 财务 */
-    { "GET",  "/api/club/*/finance",        club_finance_list, 1 },
-    { "POST", "/api/club/*/reimbursements", club_reimb_create, 1 },
-    { "GET",  "/api/club/*/reimbursements", club_reimb_list,   1 },
+    { "GET",    "/api/club/*/finance",           club_finance_list,   1 },
+    { "POST",   "/api/club/*/finance",           club_finance_create, 1 },
+    { "DELETE", "/api/club/*/finance/*",         club_finance_delete, 1 },
+    { "POST",   "/api/club/*/upload-receipt",    club_reimb_upload,   1 },
+    { "POST",   "/api/club/*/reimbursements",    club_reimb_create,   1 },
+    { "GET",    "/api/club/*/reimbursements",    club_reimb_list,     1 },
 
     /* 换届选举（具体在前） */
     { "POST", "/api/club/*/elections/reelect",       club_election_reelect,    1 },

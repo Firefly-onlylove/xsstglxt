@@ -140,10 +140,12 @@ const reimbCols = [
 const reimbStatusLabel = s => ({ college_pending:'院级待审', school_pending:'校级待审', approved:'已通过', rejected:'已驳回' }[s] || s)
 const reimbStatusType  = s => ({ college_pending:'warning', school_pending:'primary', approved:'success', rejected:'danger' }[s] || '')
 
-async function loadRecords() {
+async function loadRecords(params) {
   if (!clubId.value) return
   loading.value = true
-  const res = await api.get('/api/club/' + clubId.value + '/finance')
+  const query = { ...recFilter.value }
+  if (params?.page) query.page = params.page
+  const res = await api.get('/api/club/' + clubId.value + '/finance', query)
   loading.value = false
   if (res.code === 0) {
     summary.value[0].value = '¥' + res.data.income
@@ -177,6 +179,7 @@ async function submitReimb() {
   if (!reimbForm.value.receipt_path) { ElMessage.warning('请先上传发票'); return }
   const res = await api.post('/api/club/' + clubId.value + '/reimbursements', reimbForm.value)
   if (res.code === 0) { ElMessage.success('申请已提交'); reimbVisible.value = false; loadReimbs() }
+  else ElMessage.error(res.msg)
 }
 
 onMounted(() => {

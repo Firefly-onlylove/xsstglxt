@@ -124,8 +124,8 @@ async function cancelRegister() {
   const res = await api.post('/api/activities/' + route.params.id + '/cancel')
   if (res.code === 0) {
     ElMessage.success('已取消')
-    myStatus.value = 'cancelled'
-    activity.value.current_count = Math.max(0, (activity.value.current_count || 0) - 1)
+    myStatus.value = 'not_registered'
+    loadRegistrations()
   }
 }
 

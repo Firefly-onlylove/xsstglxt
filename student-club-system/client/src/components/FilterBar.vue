@@ -5,7 +5,7 @@
       <el-button type="primary" @click="$emit('search')">
         <el-icon><Search /></el-icon>查询
       </el-button>
-      <el-button @click="$emit('reset')">重置</el-button>
+      <el-button @click="$emit('reset')">刷新</el-button>
     </div>
   </div>
 </template>
