@@ -26,14 +26,14 @@
         <el-tag size="small" :type="roleType(row.role)">{{ roleLabel(row.role) }}</el-tag>
       </template>
       <template #status="{ row }">
-        <el-tag size="small" :type="row.status === 1 ? 'success' : row.status === 0 ? 'danger' : 'warning'">
-          {{ row.status === 1 ? '正常' : row.status === 0 ? '已禁用' : '已限制' }}
+        <el-tag size="small" :type="row.status == 1 ? 'success' : row.status == 0 ? 'danger' : 'warning'">
+          {{ row.status == 1 ? '正常' : row.status == 0 ? '已禁用' : '已限制' }}
         </el-tag>
       </template>
       <template #actions="{ row }">
         <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-        <el-button link :type="row.status === 0 ? 'success' : 'warning'"
-          @click="toggleStatus(row)">{{ row.status === 0 ? '启用' : '禁用' }}</el-button>
+        <el-button link :type="row.status == 0 ? 'success' : 'warning'"
+          @click="toggleStatus(row)">{{ row.status == 0 ? '启用' : '禁用' }}</el-button>
         <el-button link type="info" @click="resetPwd(row)">重置密码</el-button>
         <el-button link type="danger" @click="openRestrict(row)">限制</el-button>
       </template>
@@ -133,7 +133,7 @@ function onPage(e) { page.value = e.page; loadData() }
 function openDetail(row) { current.value = row; detailVisible.value = true }
 
 async function toggleStatus(row) {
-  const action = row.status === 'disabled' ? '启用' : '禁用'
+  const action = row.status != 1 ? '启用' : '禁用'
   await ElMessageBox.confirm(`确认${action}用户 ${row.real_name}？`, '提示', { type: 'warning' })
   const res = await api.post('/api/school/users/' + row.user_id + '/toggle')
   if (res.code === 0) { ElMessage.success(action + '成功'); loadData() }
