@@ -117,7 +117,7 @@ if "%MYSQL_SVC%"=="" (
 )
 
 mysql -u %MYSQL_USER% -p%MYSQL_PASS% --batch --no-beep -e "SELECT 1" >nul 2>&1
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo     [ERROR] MySQL connection failed (user=%MYSQL_USER% password=%MYSQL_PASS%)
     echo     Edit MYSQL_PASS at top of this file or check db_config.ini
     pause & exit /b 1
