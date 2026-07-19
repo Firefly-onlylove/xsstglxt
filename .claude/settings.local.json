@@ -86,7 +86,14 @@
       "Bash(npm --version)",
       "Bash(vite --version)",
       "Bash(node *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(python *)",
+      "Bash(where python3 *)",
+      "Bash(\"C:/mingw4/mingw64/bin/mingw32-make.exe\")",
+      "Bash(CC=\"C:/mingw4/mingw64/bin/gcc\" MYSQL_INC=\"-IC:/Program Files/MySQL/MySQL Server 8.0/include\" MYSQL_LIB=\"-LC:/Program Files/MySQL/MySQL Server 8.0/lib\" mingw32-make clean)",
+      "Bash(\"/c/mingw4/mingw64/bin/mingw32-make\" CC=\"/c/mingw4/mingw64/bin/gcc\" clean)",
+      "Bash(\"/c/mingw4/mingw64/bin/mingw32-make\" CC=\"/c/mingw4/mingw64/bin/gcc\")",
+      "Bash(npm run *)"
     ]
   }
 }
