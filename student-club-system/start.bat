@@ -121,7 +121,7 @@ if "%MYSQL_SVC%"=="" (
 
 mysql -u %MYSQL_USER% -p%MYSQL_PASS% --batch --no-beep -e "SELECT 1" >nul 2>&1
 if errorlevel 1 (
-    echo     [ERROR] MySQL 连接失败 (user=%MYSQL_USER% password=%MYSQL_PASS%)
+    echo     [ERROR] MySQL 连接失败 user=%MYSQL_USER% password=%MYSQL_PASS%
     echo     请修改本文件顶部的 MYSQL_PASS 或检查 db_config.ini
     pause & exit /b 1
 )
