@@ -110,14 +110,28 @@ const registerBtnText = computed(() => {
 
 async function doRegister() {
   const res = await api.post('/api/activities/' + route.params.id + '/register')
-  if (res.code === 0) { ElMessage.success('报名成功'); myStatus.value = 'registered'; loadData() }
+  if (res.code === 0) {
+    ElMessage.success('报名成功')
+    myStatus.value = 'registered'
+    activity.value.current_count = (activity.value.current_count || 0) + 1
+    loadRegistrations()
+  }
   else ElMessage.error(res.msg)
 }
 
 async function cancelRegister() {
   await ElMessageBox.confirm('确认取消报名？', '提示', { type: 'warning' })
   const res = await api.post('/api/activities/' + route.params.id + '/cancel')
-  if (res.code === 0) { ElMessage.success('已取消'); myStatus.value = 'cancelled' }
+  if (res.code === 0) {
+    ElMessage.success('已取消')
+    myStatus.value = 'cancelled'
+    activity.value.current_count = Math.max(0, (activity.value.current_count || 0) - 1)
+  }
+}
+
+async function loadRegistrations() {
+  const res = await api.get('/api/activities/' + route.params.id + '/registrations')
+  if (res.code === 0) registrations.value = res.data.list || []
 }
 
 async function doSignin() {
