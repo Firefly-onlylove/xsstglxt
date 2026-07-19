@@ -133,21 +133,31 @@ void sch_user_create_college_admin(ApiContext *ctx) {
     api_ok_msg(ctx, "学院管理员已创建");
 }
 
-/* POST /api/school/users/{id}/toggle  在 1/0 间切换 status */
+/* POST /api/school/users/{id}/toggle  切换 status：active ↔ disabled */
 void sch_user_toggle(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
     int id = api_get_path_int(ctx, 2);
     if (id <= 0) { api_error(ctx, ERR_INPUT, "用户ID非法"); return; }
     if (id == ctx->user->user_id) { api_error(ctx, ERR_STATUS, "不能禁用自己"); return; }
 
-    int ok = db_execute("UPDATE users SET status = 1 - status WHERE user_id=%d", id);
-    if (ok <= 0) { api_error(ctx, ERR_NOT_FOUND, "用户不存在"); return; }
+    char cur_status[32] = "";
+    MYSQL_RES *res = db_query("SELECT status FROM users WHERE user_id=%d", id);
+    if (!res || mysql_num_rows(res) == 0) {
+        if (res) mysql_free_result(res);
+        api_error(ctx, ERR_NOT_FOUND, "用户不存在"); return;
+    }
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (row[0]) utils_strlcpy(cur_status, row[0], sizeof(cur_status));
+    mysql_free_result(res);
 
-    int now = db_query_int("SELECT status FROM users WHERE user_id=%d", id);
+    const char *new_status = utils_str_equal(cur_status, "disabled") ? "active" : "disabled";
+    int ok = db_execute("UPDATE users SET status='%s' WHERE user_id=%d", new_status, id);
+    if (ok <= 0) { api_error(ctx, ERR_DB, "操作失败"); return; }
+
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
                "VALUES (%d, 'toggle_user', 'users', %d, '切换用户状态')",
                ctx->user->user_id, id);
-    api_ok_msg(ctx, now ? "已启用" : "已禁用");
+    api_ok_msg(ctx, utils_str_equal(new_status, "active") ? "已启用" : "已禁用");
 }
 
 /* POST /api/school/users/{id}/reset-password  body: new_password（缺省重置为 123456） */
@@ -179,7 +189,7 @@ void sch_user_restrict(ApiContext *ctx) {
     if (id <= 0) { api_error(ctx, ERR_INPUT, "用户ID非法"); return; }
 
     char type[20] = "", start[20] = "", end[20] = "", reason[501] = "";
-    api_get_json_str(ctx, "type", type, sizeof(type));
+    api_get_json_str(ctx, "restriction_type", type, sizeof(type));
     api_get_json_str(ctx, "start_time", start, sizeof(start));
     api_get_json_str(ctx, "end_time", end, sizeof(end));
     api_get_json_str(ctx, "reason", reason, sizeof(reason));

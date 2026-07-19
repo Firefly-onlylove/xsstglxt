@@ -243,7 +243,7 @@ INSERT INTO members (club_id, user_id, role, join_status) VALUES
 -- ================================================================
 
 -- ACM编程协会 活动 (club_id=1)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (1, 1, 'ACM新生算法入门赛', '面向大一新生的算法竞赛入门训练赛，涵盖基础数据结构和经典算法题目，帮助新生快速适应ACM竞赛节奏。',
     '2026-07-20 14:00:00', '2026-07-20 18:00:00', '2026-07-19 23:59:59', '信科院实验楼A301', 50, 'published', 'A1B2C3'),
 (2, 1, '动态规划专题训练', '深度讲解动态规划经典题型，从记忆化搜索到状态压缩DP，含实战训练环节。',
@@ -252,7 +252,7 @@ INSERT INTO activities (activity_id, club_id, title, description, start_time, en
     '2026-08-15 09:00:00', '2026-08-17 18:00:00', '2026-08-10 23:59:59', '线上+线下', 60, 'draft', NULL);
 
 -- 志愿者协会 活动 (club_id=2)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (4, 2, '校园环保志愿活动', '组织志愿者在校园内进行垃圾分类宣传和环境清理活动，共建绿色校园。',
     '2026-07-25 08:00:00', '2026-07-25 12:00:00', '2026-07-24 20:00:00', '校园中心广场', 30, 'published', 'C7D8E9'),
 (5, 2, '敬老院慰问活动', '前往市养老院进行慰问演出和陪伴活动，传递社会温暖与关爱。',
@@ -261,40 +261,40 @@ INSERT INTO activities (activity_id, club_id, title, description, start_time, en
     '2026-08-01 00:00:00', '2026-08-15 00:00:00', '2026-07-28 23:59:59', '线上报名', 50, 'published', NULL);
 
 -- 星空天文社 活动 (club_id=3)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (7, 3, '夏季星空观测之夜', '前往郊区天文观测点，使用天文望远镜观测夏季大三角和银河，学习星座知识。',
     '2026-07-28 20:00:00', '2026-07-29 02:00:00', '2026-07-27 18:00:00', '郊外天文观测基地', 20, 'published', 'G3H4I5'),
 (8, 3, '天文知识科普讲座', '邀请物理系教授讲解黑洞、引力波等前沿天文知识，面向全校师生开放。',
     '2026-06-20 14:00:00', '2026-06-20 17:00:00', '2026-06-19 18:00:00', '理学院报告厅', 80, 'completed', 'J6K7L8');
 
 -- 绿茵足球社 活动 (club_id=4)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (9, 4, '院际足球联赛第一轮', '本学期院际足球联赛开幕战，信息科学学院 VS 工学院，欢迎观赛助威。',
     '2026-07-22 14:00:00', '2026-07-22 17:00:00', '2026-07-22 12:00:00', '北校区足球场', 100, 'published', 'M9N0O1'),
 (10, 4, '足球基础技术训练', '针对足球初学者的基础技术训练课程，含传球、射门、防守基本功教学。',
     '2026-07-18 16:00:00', '2026-07-18 18:00:00', '2026-07-18 14:00:00', '北校区足球场', 30, 'ongoing', 'P2Q3R4');
 
 -- 信科算法社 活动 (club_id=5)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (11, 5, 'LeetCode周赛实战', '组织社团成员统一参加LeetCode周赛，赛后讲解排名和解题思路，提升算法能力。',
     '2026-07-19 10:00:00', '2026-07-19 12:00:00', '2026-07-19 09:30:00', '信科院实验室B102', 30, 'cancelled', NULL),
 (12, 5, '数据结构系列讲座——图论篇', '系统讲解图的存储、遍历、最短路径、最小生成树等核心算法。',
     '2026-07-26 14:00:00', '2026-07-26 17:00:00', '2026-07-25 18:00:00', '信科院教学楼C201', 45, 'published', NULL);
 
 -- 文学创作社 活动 (club_id=6)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (13, 6, '校园征文比赛', '以"青春与梦想"为主题的校园征文比赛，体裁不限，优秀作品将在校报刊登。',
     '2026-07-15 00:00:00', '2026-08-15 00:00:00', '2026-08-10 23:59:59', '线上投稿', 200, 'published', NULL),
 (14, 6, '文学经典读书会——《百年孤独》', '共同阅读马尔克斯经典作品，探讨魔幻现实主义文学的魅力。',
     '2026-06-05 18:30:00', '2026-06-05 20:30:00', '2026-06-04 18:00:00', '文学院阅览室', 20, 'completed', 'S5T6U7');
 
 -- 化学实验社 活动 (club_id=7)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (15, 7, '趣味化学实验——自制口红与手工皂', '用化学知识亲手制作口红和手工皂，体验化学与生活的奇妙碰撞。',
     '2026-07-28 14:00:00', '2026-07-28 17:00:00', '2026-07-27 18:00:00', '理学院化学实验楼B101', 25, 'published', 'V8W9X0');
 
 -- 创业实践社 活动 (club_id=8)
-INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, checkin_code) VALUES
+INSERT INTO activities (activity_id, club_id, title, description, start_time, end_time, signup_deadline, location, max_participants, status, signin_code) VALUES
 (16, 8, '校园创业计划大赛宣讲会', '介绍创业计划大赛的参赛流程和评审标准，邀请往届获奖团队分享经验。',
     '2026-05-20 15:00:00', '2026-05-20 17:00:00', '2026-05-20 12:00:00', '经管院教学楼A101', 60, 'completed', 'Y1Z2A3');
 
@@ -486,64 +486,37 @@ INSERT INTO reimbursement (club_id, applicant_id, amount, description, receipt_p
 -- ================================================================
 
 -- ACM编程协会：已结束的一届 + 正在报名中的一届
-INSERT INTO elections (election_id, club_id, title, initiated_by, term_start, term_end, signup_start, signup_end, vote_start, vote_end, president_count, vice_president_count, status, created_at) VALUES
-(1, 1, 'ACM编程协会2026年换届选举', 101, '2026-03-01', '2027-03-01', '2026-02-20 00:00:00', '2026-03-01 23:59:59', '2026-03-02 00:00:00', '2026-03-10 23:59:59', 1, 1, 'completed', '2026-02-15 10:00:00'),
-(2, 1, 'ACM编程协会副社长补选', 101, '2026-07-15', '2027-07-15', '2026-07-15 00:00:00', '2026-07-30 23:59:59', '2026-08-01 00:00:00', '2026-08-05 23:59:59', 0, 1, 'signup', '2026-07-10 10:00:00');
+INSERT INTO elections (election_id, club_id, initiated_by, term_start, term_end, signup_start, signup_end, vote_start, vote_end, president_count, vice_president_count, status, created_at) VALUES
+(1, 1, 101, '2026-03-01', '2027-03-01', '2026-02-20 00:00:00', '2026-03-01 23:59:59', '2026-03-02 00:00:00', '2026-03-10 23:59:59', 1, 1, 'completed', '2026-02-15 10:00:00'),
+(2, 1, 101, '2026-07-15', '2027-07-15', '2026-07-15 00:00:00', '2026-07-30 23:59:59', '2026-08-01 00:00:00', '2026-08-05 23:59:59', 0, 1, 'signup', '2026-07-10 10:00:00');
 
 -- 绿茵足球社：正在投票中
-INSERT INTO elections (election_id, club_id, title, initiated_by, term_start, term_end, signup_start, signup_end, vote_start, vote_end, president_count, vice_president_count, status, created_at) VALUES
-(3, 4, '绿茵足球社2026年换届选举', 108, '2026-07-10', '2027-07-10', '2026-07-01 00:00:00', '2026-07-10 23:59:59', '2026-07-11 00:00:00', '2026-07-25 23:59:59', 1, 0, 'voting', '2026-06-20 14:00:00');
+INSERT INTO elections (election_id, club_id, initiated_by, term_start, term_end, signup_start, signup_end, vote_start, vote_end, president_count, vice_president_count, status, created_at) VALUES
+(3, 4, 108, '2026-07-10', '2027-07-10', '2026-07-01 00:00:00', '2026-07-10 23:59:59', '2026-07-11 00:00:00', '2026-07-25 23:59:59', 1, 0, 'voting', '2026-06-20 14:00:00');
 
 -- 文学创作社：已结束
-INSERT INTO elections (election_id, club_id, title, initiated_by, term_start, term_end, signup_start, signup_end, vote_start, vote_end, president_count, vice_president_count, status, created_at) VALUES
-(4, 6, '文学创作社2026年换届选举', 103, '2026-03-05', '2027-03-05', '2026-02-20 00:00:00', '2026-03-05 23:59:59', '2026-03-06 00:00:00', '2026-03-15 23:59:59', 1, 1, 'completed', '2026-02-18 09:00:00');
+INSERT INTO elections (election_id, club_id, initiated_by, term_start, term_end, signup_start, signup_end, vote_start, vote_end, president_count, vice_president_count, status, created_at) VALUES
+(4, 6, 103, '2026-03-05', '2027-03-05', '2026-02-20 00:00:00', '2026-03-05 23:59:59', '2026-03-06 00:00:00', '2026-03-15 23:59:59', 1, 1, 'completed', '2026-02-18 09:00:00');
 
 -- 选举1的候选人（已结束，张三连任）
-INSERT INTO election_candidates (election_id, user_id, position, is_reelect, votes, created_at) VALUES
-(1, 101, 'president', 1, 10, '2026-02-21 10:00:00'),
-(1, 205, 'president', 0, 5, '2026-02-22 14:00:00'),
-(1, 202, 'vice_president', 1, 12, '2026-02-21 11:00:00'),
-(1, 208, 'vice_president', 0, 3, '2026-02-23 09:00:00');
+INSERT INTO election_candidates (election_id, user_id, position) VALUES
+(1, 101, 'president'),
+(1, 205, 'president'),
+(1, 202, 'vice_president'),
+(1, 208, 'vice_president');
 
 -- 选举2的候选人（报名中，3人参选副社长）
-INSERT INTO election_candidates (election_id, user_id, position, is_reelect, votes, created_at) VALUES
-(2, 203, 'vice_president', 0, 0, '2026-07-16 10:00:00'),
-(2, 211, 'vice_president', 0, 0, '2026-07-17 14:00:00'),
-(2, 214, 'vice_president', 0, 0, '2026-07-18 09:00:00');
+INSERT INTO election_candidates (election_id, user_id, position) VALUES
+(2, 203, 'vice_president'),
+(2, 211, 'vice_president'),
+(2, 214, 'vice_president');
 
 -- 选举3的候选人（投票中，足球社）
-INSERT INTO election_candidates (election_id, user_id, position, is_reelect, votes, created_at) VALUES
-(3, 108, 'president', 1, 5, '2026-07-02 10:00:00'),
-(3, 204, 'president', 0, 3, '2026-07-03 14:00:00');
+INSERT INTO election_candidates (election_id, user_id, position) VALUES
+(3, 108, 'president'),
+(3, 204, 'president');
 
--- 选举1的投票记录（已结束）——使用 vote_logs 表
-INSERT INTO vote_logs (election_id, user_id, voted_at) VALUES
-(1, 201, '2026-03-03 10:00:00'),
-(1, 203, '2026-03-03 10:05:00'),
-(1, 208, '2026-03-03 10:10:00'),
-(1, 211, '2026-03-03 10:15:00'),
-(1, 214, '2026-03-03 10:20:00'),
-(1, 216, '2026-03-03 10:25:00'),
-(1, 219, '2026-03-03 10:30:00'),
-(1, 233, '2026-03-03 10:35:00'),
-(1, 235, '2026-03-03 10:40:00'),
-(1, 239, '2026-03-03 10:45:00'),
-(1, 243, '2026-03-03 10:50:00'),
-(1, 255, '2026-03-03 10:55:00'),
-(1, 202, '2026-03-03 11:00:00'),
-(1, 205, '2026-03-03 11:05:00'),
-(1, 208, '2026-03-03 11:10:00');
-
--- 选举3的投票记录（投票中，已有8票）
-INSERT INTO vote_logs (election_id, user_id, voted_at) VALUES
-(3, 201, '2026-07-12 10:00:00'),
-(3, 204, '2026-07-12 10:05:00'),
-(3, 213, '2026-07-12 10:10:00'),
-(3, 218, '2026-07-12 10:15:00'),
-(3, 229, '2026-07-12 10:20:00'),
-(3, 246, '2026-07-12 10:25:00'),
-(3, 252, '2026-07-12 10:30:00'),
-(3, 269, '2026-07-12 10:35:00');
+-- 投票记录跳过（vote_logs 表已移除，改用 election_votes）
 
 -- ================================================================
 -- 10. 通知消息（覆盖系统/社团/活动三种类型）
@@ -606,7 +579,7 @@ INSERT INTO notifications (user_id, title, content, type, is_read) VALUES
 -- 学校公告
 INSERT INTO announcements (title, content, scope, publisher_id) VALUES
 ('关于2026年秋季社团招新工作安排的通知', '各社团负责人请注意：2026年秋季社团招新工作将于9月1日正式启动，请各社团在8月20日前提交招新计划和展位申请。社团管理中心将统一协调安排招新时间和场地。', 'school', 1),
-('2026年度优秀社团评选通知', '为了表彰在2025-2026学年中表现突出的学生社团，学校决定开展年度优秀社团评选活动。评选标准包括社团活动质量、成员发展、财务管理等多个维度。请各社团在8月30日前提交申报材料。', 'school', 1
+('2026年度优秀社团评选通知', '为了表彰在2025-2026学年中表现突出的学生社团，学校决定开展年度优秀社团评选活动。评选标准包括社团活动质量、成员发展、财务管理等多个维度。请各社团在8月30日前提交申报材料。', 'school', 1);
 
 -- 学院公告
 INSERT INTO announcements (title, content, scope, college_id, publisher_id) VALUES
@@ -616,7 +589,7 @@ INSERT INTO announcements (title, content, scope, college_id, publisher_id) VALU
 -- 社团公告
 INSERT INTO announcements (title, content, scope, club_id, publisher_id) VALUES
 ('ACM编程协会新社员招募中', 'ACM编程协会欢迎所有对算法和编程感兴趣的同学加入！零基础也可，我们提供系统化的算法培训课程。报名方式：在社团广场搜索"ACM编程协会"并提交入社申请。', 'club', 1, 101),
-('绿茵足球社暑期训练计划', '暑期足球训练将于7月至8月每周二、四下午4:00-6:00在北校区足球场进行，请各位社员安排好时间，积极参加。', 'club', 4
+('绿茵足球社暑期训练计划', '暑期足球训练将于7月至8月每周二、四下午4:00-6:00在北校区足球场进行，请各位社员安排好时间，积极参加。', 'club', 4, 108);
 
 -- ================================================================
 -- 12. 操作日志

@@ -62,9 +62,8 @@
       <el-form ref="restrictForm" :model="restrictData" label-width="110px">
         <el-form-item label="限制类型" prop="restriction_type" :rules="[{required:true}]">
           <el-select v-model="restrictData.restriction_type" style="width:100%">
-            <el-option label="禁止加入社团" value="no_join" />
-            <el-option label="禁止参加活动" value="no_activity" />
-            <el-option label="禁止申请社团" value="no_apply" />
+            <el-option label="禁止加入社团" value="ban_join" />
+            <el-option label="禁止参加活动" value="ban_activity" />
           </el-select>
         </el-form-item>
         <el-form-item label="限制原因" prop="reason" :rules="[{required:true}]">
@@ -138,6 +137,7 @@ async function toggleStatus(row) {
   await ElMessageBox.confirm(`确认${action}用户 ${row.real_name}？`, '提示', { type: 'warning' })
   const res = await api.post('/api/school/users/' + row.user_id + '/toggle')
   if (res.code === 0) { ElMessage.success(action + '成功'); loadData() }
+  else ElMessage.error(res.msg || '操作失败')
 }
 
 async function resetPwd(row) {
@@ -153,6 +153,7 @@ async function doRestrict() {
   await restrictForm.value.validate()
   const res = await api.post('/api/school/users/' + current.value.user_id + '/restrict', restrictData.value)
   if (res.code === 0) { ElMessage.success('已限制'); restrictVisible.value = false; loadData() }
+  else ElMessage.error(res.msg || '限制失败')
 }
 
 function openCreateAdmin() {
