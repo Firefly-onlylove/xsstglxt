@@ -86,6 +86,7 @@ void sch_finance_club(ApiContext *ctx);      /* GET  /api/school/finance/{club_i
 void sch_reimb_pending(ApiContext *ctx);     /* GET  /api/school/reimbursements/pending */
 void sch_reimb_approve(ApiContext *ctx);     /* POST /api/school/reimbursements/{id}/approve */
 void sch_reimb_reject(ApiContext *ctx);      /* POST /api/school/reimbursements/{id}/reject */
+void sch_reimb_college_list(ApiContext *ctx);/* GET  /api/school/reimbursements/college */
 
 /* 公告 */
 void sch_announce_list(ApiContext *ctx);     /* GET    /api/school/announcements */

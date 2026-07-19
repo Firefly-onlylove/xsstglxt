@@ -16,7 +16,7 @@
       <el-tab-pane label="报销审批" name="reimbursements">
         <FilterBar @search="loadReimb" @reset="()=>{reimbFilter={};loadReimb()}">
           <el-select v-model="reimbFilter.status" placeholder="状态" clearable style="width:130px">
-            <el-option label="待审批" value="school_pending" />
+            <el-option label="待审批" value="pending" />
             <el-option label="已通过" value="approved" />
             <el-option label="已驳回" value="rejected" />
           </el-select>
@@ -28,10 +28,18 @@
           </template>
           <template #actions="{ row }">
             <el-button link type="primary" @click="openReimbDetail(row)">详情</el-button>
-            <template v-if="row.status==='school_pending'">
+            <template v-if="row.status==='pending'">
               <el-button link type="success" @click="approveReimb(row, true)">通过</el-button>
               <el-button link type="danger" @click="approveReimb(row, false)">驳回</el-button>
             </template>
+          </template>
+        </DataTable>
+      </el-tab-pane>
+
+      <el-tab-pane label="学院报销记录" name="collegeReimb">
+        <DataTable :data="collegeReimbData" :columns="collegeReimbCols" :loading="clgReimbLoading">
+          <template #status="{ row }">
+            <el-tag :type="reimbStatusType(row.status)" size="small">{{ reimbStatusLabel(row.status) }}</el-tag>
           </template>
         </DataTable>
       </el-tab-pane>
@@ -43,6 +51,11 @@
           <el-table-column prop="total_expense" label="总支出" />
           <el-table-column prop="balance" label="余额" />
           <el-table-column prop="club_count" label="社团数" width="80" />
+          <el-table-column label="操作" width="100">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="router.push('/school/club-mgmt')">审批</el-button>
+            </template>
+          </el-table-column>
         </el-table>
       </el-tab-pane>
     </el-tabs>
@@ -70,10 +83,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FilterBar from '@/components/FilterBar.vue'
 import DataTable from '@/components/DataTable.vue'
+
+const router = useRouter()
 
 const activeTab = ref('reimbursements')
 const loading = ref(false)
@@ -90,6 +106,25 @@ const reimbFilter = ref({})
 const reimbVisible = ref(false)
 const currentReimb = ref(null)
 const collegeFinance = ref([])
+const collegeReimbData = ref([])
+const clgReimbLoading = ref(false)
+
+const collegeReimbCols = [
+  { prop: 'club_name',      label: '社团',   width: 120 },
+  { prop: 'college_name',   label: '学院',   width: 120 },
+  { prop: 'amount',         label: '金额',   width: 90 },
+  { prop: 'description',    label: '用途' },
+  { prop: 'applicant_name', label: '申请人', width: 90 },
+  { prop: 'submitted_at',   label: '时间',   width: 160 },
+  { slot: 'status',         label: '审批状态', width: 110 }
+]
+
+async function loadCollegeReimb() {
+  clgReimbLoading.value = true
+  const res = await api.get('/api/school/reimbursements/college')
+  clgReimbLoading.value = false
+  if (res.code === 0) collegeReimbData.value = res.data.list || []
+}
 
 const reimbCols = [
   { prop: 'club_name',      label: '社团',   width: 120 },
@@ -101,8 +136,8 @@ const reimbCols = [
   { slot: 'actions',        label: '操作',   width: 160, fixed: 'right' }
 ]
 
-const reimbStatusLabel = s => ({ school_pending:'待审批', college_pending:'院级待审', approved:'已通过', rejected:'已驳回' }[s] || s)
-const reimbStatusType  = s => ({ school_pending:'warning', college_pending:'warning', approved:'success', rejected:'danger' }[s] || '')
+const reimbStatusLabel = s => ({ pending:'待审批', college_pending:'院级待审', approved:'已通过', rejected:'已驳回' }[s] || s)
+const reimbStatusType  = s => ({ pending:'warning', college_pending:'warning', approved:'success', rejected:'danger' }[s] || '')
 
 async function loadReimb() {
   loading.value = true
@@ -135,5 +170,6 @@ onMounted(async () => {
     collegeFinance.value = ov.data.colleges || []
   }
   loadReimb()
+  loadCollegeReimb()
 })
 </script>

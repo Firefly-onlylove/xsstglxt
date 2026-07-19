@@ -105,13 +105,48 @@ void sch_finance_club(ApiContext *ctx) {
 /* GET /api/school/reimbursements/pending  待审批的校级社团报销 */
 void sch_reimb_pending(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
+    char status[32] = "";
+    api_get_param(ctx, "status", status, sizeof(status));
+    MYSQL_RES *res;
+    if (strcmp(status, "approved") == 0) {
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, r.description, "
+            "r.receipt_path, COALESCE(u.real_name,'—') AS applicant_name, r.submitted_at, r.status "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.level='school' AND r.status='approved' ORDER BY r.submitted_at DESC");
+    } else if (strcmp(status, "rejected") == 0) {
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, r.description, "
+            "r.receipt_path, COALESCE(u.real_name,'—') AS applicant_name, r.submitted_at, r.status "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.level='school' AND r.status='rejected' ORDER BY r.submitted_at DESC");
+    } else {
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, r.description, "
+            "r.receipt_path, COALESCE(u.real_name,'—') AS applicant_name, r.submitted_at, r.status "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.level='school' AND r.status='pending' ORDER BY r.submitted_at");
+    }
+    api_send_result_data(ctx, res);
+}
+
+/* GET /api/school/reimbursements/college  学院端报销记录汇总 */
+void sch_reimb_college_list(ApiContext *ctx) {
+    if (!api_require_school_admin(ctx)) return;
     MYSQL_RES *res = db_query(
-        "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, r.description, "
-        "r.receipt_path, COALESCE(u.real_name,'—') AS applicant_name, r.submitted_at "
+        "SELECT r.reimbursement_id, r.club_id, c.club_name, col.college_name, r.amount, "
+        "r.description, COALESCE(u.real_name,'—') AS applicant_name, r.submitted_at, r.status "
         "FROM reimbursement r "
         "JOIN clubs c ON r.club_id=c.club_id "
+        "JOIN colleges col ON c.college_id=col.college_id "
         "LEFT JOIN users u ON r.applicant_id=u.user_id "
-        "WHERE c.level='school' AND r.status='pending' ORDER BY r.submitted_at");
+        "WHERE c.level='college' ORDER BY r.submitted_at DESC");
     api_send_result_data(ctx, res);
 }
 

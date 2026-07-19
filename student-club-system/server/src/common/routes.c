@@ -73,6 +73,7 @@ static const Route ROUTES[] = {
     { "GET",  "/api/school/finance/*",                sch_finance_club,   1 },
     { "GET",  "/api/school/finance",                  sch_finance_overview,1 },
     { "GET",  "/api/school/reimbursements/pending",   sch_reimb_pending,  1 },
+    { "GET",  "/api/school/reimbursements/college",   sch_reimb_college_list, 1 },
     { "POST", "/api/school/reimbursements/*/approve", sch_reimb_approve,  1 },
     { "POST", "/api/school/reimbursements/*/reject",  sch_reimb_reject,   1 },
 
