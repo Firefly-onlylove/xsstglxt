@@ -99,6 +99,7 @@ STUB_HANDLER(col_student_restrict)
 STUB_HANDLER(col_student_lift)
 STUB_HANDLER(col_announce_list)
 STUB_HANDLER(col_announce_post)
+STUB_HANDLER(col_announce_delete)
 
 /* ===== student ===== */
 STUB_HANDLER(stu_club_browse)

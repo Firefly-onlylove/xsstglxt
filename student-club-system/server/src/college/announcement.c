@@ -64,4 +64,20 @@ void col_announce_post(ApiContext *ctx) {
     api_ok_msg(ctx, "公告已发布，本院学生将收到通知");
 }
 
+/* DELETE /api/college/announcements/{id} */
+void col_announce_delete(ApiContext *ctx) {
+    if (!api_require_college_admin(ctx)) return;
+    int cid = ctx->user->college_id;
+    int id = api_get_path_int(ctx, 2);
+    if (id <= 0) { api_error(ctx, ERR_INPUT, "公告ID非法"); return; }
+
+    int ok = db_execute("DELETE FROM announcements WHERE announcement_id=%d AND scope='college' AND college_id=%d", id, cid);
+    if (ok <= 0) { api_error(ctx, ERR_NOT_FOUND, "公告不存在或无权删除"); return; }
+
+    db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
+               "VALUES (%d, 'delete_announcement', 'announcements', %d, '删除学院公告')",
+               ctx->user->user_id, id);
+    api_ok_msg(ctx, "已删除");
+}
+
 #endif

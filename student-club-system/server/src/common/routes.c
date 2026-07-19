@@ -127,6 +127,7 @@ static const Route ROUTES[] = {
     { "GET",  "/api/college/students",                   col_student_list,     1 },
 
     /* 学院公告 */
+    { "DELETE","/api/college/announcements/*", col_announce_delete, 1 },
     { "POST", "/api/college/announcements", col_announce_post, 1 },
     { "GET",  "/api/college/announcements", col_announce_list, 1 },
 

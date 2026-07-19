@@ -52,7 +52,7 @@ void col_student_list(ApiContext *ctx) {
 
     /* 关联 user_restrictions 取当前生效限制（子查询）。 */
     MYSQL_RES *res = db_query(
-        "SELECT u.user_id, u.real_name, u.student_no, u.phone, u.status, "
+        "SELECT u.user_id, u.real_name, u.student_no, u.phone, u.status, u.last_login, "
         "m.major_name, cl.class_name, "
         "(SELECT GROUP_CONCAT(restriction_type) FROM user_restrictions ur "
         " WHERE ur.user_id=u.user_id AND ur.is_active=1) AS restrictions "

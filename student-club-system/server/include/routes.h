@@ -140,6 +140,7 @@ void col_student_lift(ApiContext *ctx);      /* POST /api/college/students/{id}/
 /* 学院公告 */
 void col_announce_list(ApiContext *ctx);     /* GET  /api/college/announcements */
 void col_announce_post(ApiContext *ctx);     /* POST /api/college/announcements */
+void col_announce_delete(ApiContext *ctx);   /* DELETE /api/college/announcements/{id} */
 
 /* ═══════════════════════ 学生端（stu_） ═══════════════════════ */
 /* 社团广场 */

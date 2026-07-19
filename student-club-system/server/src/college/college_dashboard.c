@@ -58,9 +58,9 @@ void col_dashboard(ApiContext *ctx) {
     JsonBuilder jb;
     json_init(&jb);
     json_add_int(&jb, "club_count", club_cnt);
-    json_add_int(&jb, "member_count", member_cnt);
+    json_add_int(&jb, "student_count", member_cnt);
     json_add_int(&jb, "activity_count", act_cnt);
-    json_add_int(&jb, "pending_reimbursement", reimb_cnt);
+    json_add_int(&jb, "pending_reimb", reimb_cnt);
     api_ok_data(ctx, json_finish(&jb));
     json_free(&jb);
 }

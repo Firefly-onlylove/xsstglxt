@@ -82,7 +82,7 @@ async function doCreate() {
 
 async function deleteAnnouncement(row) {
   await ElMessageBox.confirm('确认删除该公告？', '提示', { type: 'warning' })
-  const res = await api.delete('/api/school/announcements/' + row.announce_id)
+  const res = await api.delete('/api/school/announcements/' + row.announcement_id)
   if (res.code === 0) { ElMessage.success('已删除'); loadData() }
 }
 

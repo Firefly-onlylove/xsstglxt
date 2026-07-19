@@ -14,12 +14,12 @@
     <DataTable :data="tableData" :columns="columns" :total="total" :loading="loading"
       @page-change="onPage">
       <template #status="{ row }">
-        <el-tag size="small" :type="row.has_restriction ? 'danger' : 'success'">
-          {{ row.has_restriction ? '已限制' : '正常' }}
+        <el-tag size="small" :type="(row.restrictions && row.restrictions !== '' && row.restrictions !== 'NULL') ? 'danger' : 'success'">
+          {{ (row.restrictions && row.restrictions !== '' && row.restrictions !== 'NULL') ? '已限制' : '正常' }}
         </el-tag>
       </template>
       <template #actions="{ row }">
-        <el-button link type="danger" @click="openRestrict(row)" v-if="!row.has_restriction">限制</el-button>
+        <el-button link type="danger" @click="openRestrict(row)" v-if="!row.restrictions || row.restrictions === '' || row.restrictions === 'NULL'">限制</el-button>
         <el-button link type="success" @click="removeRestrict(row)" v-else>解除限制</el-button>
       </template>
     </DataTable>
@@ -65,12 +65,12 @@ const restrictForm = ref()
 const restrictData = ref({ restriction_type: '', reason: '' })
 
 const columns = [
-  { prop: 'student_id', label: '学号',     width: 120 },
-  { prop: 'real_name',  label: '姓名',     width: 100 },
-  { prop: 'class_name', label: '班级',     width: 160 },
-  { prop: 'club_count', label: '加入社团数', width: 100 },
-  { slot: 'status',     label: '状态',     width: 90 },
-  { slot: 'actions',    label: '操作',     width: 120, fixed: 'right' }
+  { prop: 'student_no',  label: '学号',     width: 120 },
+  { prop: 'real_name',   label: '姓名',     width: 100 },
+  { prop: 'class_name',  label: '班级',     width: 160 },
+  { prop: 'last_login',  label: '最后登录', width: 160 },
+  { slot: 'status',      label: '状态',     width: 90 },
+  { slot: 'actions',     label: '操作',     width: 140, fixed: 'right' }
 ]
 
 async function loadData() {
