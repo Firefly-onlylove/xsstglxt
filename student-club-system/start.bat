@@ -10,7 +10,9 @@ set "NGROK=%USERPROFILE%\ngrok.exe"
 set "MYSQL_USER=root"
 set "MYSQL_PASS=200357"
 
-:: ==== 发现 MinGW ====
+:: ============================================================
+:: 自动发现 MinGW
+:: ============================================================
 for %%d in (
     "C:\mingw4\mingw64"
     "D:\mingw4\mingw64"
@@ -23,7 +25,9 @@ echo [ERROR] 找不到 MinGW-w64
 pause & exit /b 1
 :found_mingw
 
-:: ==== 发现 MySQL ====
+:: ============================================================
+:: 自动发现 MySQL
+:: ============================================================
 for %%d in (
     "C:\Program Files\MySQL\MySQL Server 8.0"
     "C:\Program Files\MySQL\MySQL Server 8.4"
@@ -35,12 +39,16 @@ pause & exit /b 1
 
 set "PATH=%MINGW%\bin;%MYSQL%\bin;%MYSQL%\lib;%PATH%"
 
-:: ==== find make ====
+:: ============================================================
+:: find make
+:: ============================================================
 set "MAKE=mingw32-make"
 if not exist "%MINGW%\bin\mingw32-make.exe" set "MAKE=make"
 if not exist "%MINGW%\bin\%MAKE%.exe" set "MAKE=mingw32-make"
 
-:: ==== 读取 db_config.ini ====
+:: ============================================================
+:: 读取 db_config.ini
+:: ============================================================
 if exist "%PD%db_config.ini" (
     for /f "usebackq tokens=1* delims==" %%a in (`type "%PD%db_config.ini"`) do (
         if "%%a"=="password" set "MYSQL_PASS=%%b"
@@ -52,24 +60,56 @@ if exist "%PD%db_config.ini" (
     for /f "tokens=*" %%x in ("%MYSQL_USER%") do set "MYSQL_USER=%%x"
 )
 
-:: ==== 解析参数 ====
-if /i "%1"=="stop"     call :do_stop & exit /b 0
-if /i "%1"=="build"    set "DO_BUILD=1"    & set "MODE=local" & goto :prepare
-if /i "%1"=="rebuild"  set "DO_REBUILD=1"  & set "MODE=local" & goto :prepare
-if /i "%1"=="frontend" set "DO_FRONTEND=1" & set "MODE=local" & goto :prepare
-if /i "%1"=="all"      set "DO_ALL=1"      & set "MODE=local" & goto :prepare
-if /i "%1"=="public"   set "MODE=public"   & goto :prepare
+:: ============================================================
+:: 命令行参数（跳过菜单直接执行）
+:: ============================================================
+if /i "%1"=="stop"     call :do_stop    & exit /b 0
 if /i "%1"=="local"    set "MODE=local"    & goto :prepare
+if /i "%1"=="public"   set "MODE=public"   & goto :prepare
+if /i "%1"=="build"    call :do_build      & exit /b 0
+if /i "%1"=="rebuild"  call :do_rebuild    & exit /b 0
+if /i "%1"=="frontend" call :do_frontend   & exit /b 0
+if /i "%1"=="all"      call :do_all        & exit /b 0
 if not "%1"=="" (
-    echo 未知命令: %1  可用: local public build rebuild frontend all stop
+    echo 未知命令: %1
+    echo 可用: local public build rebuild frontend all stop
     pause & exit /b 1
 )
 
-:: 无参数 → 本地模式
-set "MODE=local"
-goto :prepare
+:: ============================================================
+:: 无参数 → 交互菜单
+:: ============================================================
+:menu
+cls
+echo.
+echo ============================================================
+echo   SCMS - 学生社团管理系统
+echo ============================================================
+echo.
+echo   [1] 本地模式  — 仅局域网访问 (http://127.0.0.1:8000^)
+echo   [2] 公网模式  — ngrok 外网访问
+echo   [3] 编译后端
+echo   [4] 编译前端
+echo   [5] 全部重新编译
+echo   [6] 停止服务器
+echo   [0] 退出
+echo.
+set /p "CHOICE=请输入选项 (0-6): "
 
-:: ================================================================
+if "%CHOICE%"=="0" exit /b 0
+if "%CHOICE%"=="1" set "MODE=local"    & goto :prepare
+if "%CHOICE%"=="2" set "MODE=public"   & goto :prepare
+if "%CHOICE%"=="3" call :do_build      & pause & goto :menu
+if "%CHOICE%"=="4" call :do_frontend   & pause & goto :menu
+if "%CHOICE%"=="5" call :do_all        & pause & goto :menu
+if "%CHOICE%"=="6" call :do_stop       & pause & goto :menu
+echo 无效选项，请重新输入。
+ping -n 2 127.0.0.1 >nul
+goto :menu
+
+:: ============================================================
+:: 准备工作（MySQL + 编译检查）
+:: ============================================================
 :prepare
 echo.
 echo ============================================================
@@ -77,7 +117,6 @@ echo   SCMS - 学生社团管理系统
 echo ============================================================
 echo.
 
-:: ==== MySQL 检测 ====
 echo [*] 正在检查 MySQL...
 set "MYSQL_SVC="
 for %%s in (MySQL80 MySQL84 MySQL90 MySQL8.0 MySQL8.4) do (
@@ -135,17 +174,8 @@ if not exist "%PD%db_config.ini" (
 :: ==== 确保 public/ 存在 ====
 if not exist "%PD%public\index.html" (
     echo     [*] 未找到 public/，正在编译前端...
-    cd /d "%PD%client"
-    if not exist "node_modules\" call npm install
-    call npm run build
-    cd /d "%PD%"
+    call :do_frontend
 )
-
-:: ==== 可选编译 ====
-if "%DO_BUILD%"=="1"    call :do_build
-if "%DO_REBUILD%"=="1"  call :do_rebuild
-if "%DO_FRONTEND%"=="1" call :do_frontend
-if "%DO_ALL%"=="1"      ( call :do_frontend & call :do_rebuild )
 
 :: ==== ngrok (公网模式) ====
 if not "%MODE%"=="public" goto :skip_ngrok
@@ -188,7 +218,9 @@ taskkill /F /IM ngrok.exe >nul 2>&1
 pause
 exit /b 0
 
-:: ================================================================
+:: ============================================================
+:: 功能子程序
+:: ============================================================
 :do_stop
 echo 正在停止端口 %PORT% 上的服务器...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%PORT%" ^| findstr "LISTENING" 2^>nul') do (
@@ -197,14 +229,13 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%PORT%" ^| findstr "LISTENI
 )
 taskkill /F /IM ngrok.exe >nul 2>&1
 echo 已停止。
-pause
 exit /b 0
 
 :do_build
 echo [*] 正在编译后端...
 cd /d "%PD%server"
 %MAKE% -j4
-if %errorlevel% neq 0 ( echo [ERROR] 编译失败 & cd /d "%PD%" & pause & exit /b 1 )
+if %errorlevel% neq 0 ( echo [ERROR] 编译失败 & cd /d "%PD%" & exit /b 1 )
 echo     编译完成
 cd /d "%PD%"
 exit /b 0
@@ -214,7 +245,7 @@ echo [*] 正在重新编译后端...
 cd /d "%PD%server"
 %MAKE% clean >nul 2>&1
 %MAKE% -j4
-if %errorlevel% neq 0 ( echo [ERROR] 编译失败 & cd /d "%PD%" & pause & exit /b 1 )
+if %errorlevel% neq 0 ( echo [ERROR] 编译失败 & cd /d "%PD%" & exit /b 1 )
 echo     重新编译完成
 cd /d "%PD%"
 exit /b 0
@@ -224,7 +255,12 @@ echo [*] 正在编译前端...
 cd /d "%PD%client"
 if not exist "node_modules\" call npm install
 call npm run build
-if %errorlevel% neq 0 ( echo [ERROR] 前端编译失败 & cd /d "%PD%" & pause & exit /b 1 )
+if %errorlevel% neq 0 ( echo [ERROR] 前端编译失败 & cd /d "%PD%" & exit /b 1 )
 echo     前端编译完成
 cd /d "%PD%"
+exit /b 0
+
+:do_all
+call :do_frontend
+call :do_rebuild
 exit /b 0
