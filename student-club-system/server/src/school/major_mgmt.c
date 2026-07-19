@@ -34,13 +34,15 @@ void sch_major_list(ApiContext *ctx) {
     if (college_id > 0) {
         res = db_query(
             "SELECT m.major_id, m.major_name, m.major_code, m.college_id, "
-            "c.college_name, m.status "
+            "c.college_name, m.status, "
+            "(SELECT COUNT(*) FROM classes WHERE major_id=m.major_id) AS class_count "
             "FROM majors m JOIN colleges c ON m.college_id=c.college_id "
             "WHERE m.college_id=%d ORDER BY m.major_id", college_id);
     } else {
         res = db_query(
             "SELECT m.major_id, m.major_name, m.major_code, m.college_id, "
-            "c.college_name, m.status "
+            "c.college_name, m.status, "
+            "(SELECT COUNT(*) FROM classes WHERE major_id=m.major_id) AS class_count "
             "FROM majors m JOIN colleges c ON m.college_id=c.college_id "
             "ORDER BY m.college_id, m.major_id");
     }

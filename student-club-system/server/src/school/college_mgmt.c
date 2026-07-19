@@ -8,10 +8,11 @@
  * └──────────────────────────────────────────────────────────────────┘
  *
  * 覆盖路由：
- *   GET  /api/school/colleges              → sch_college_list    学院列表
- *   POST /api/school/colleges              → sch_college_create  新增学院
- *   PUT  /api/school/colleges/{id}         → sch_college_update  修改学院
- *   POST /api/school/colleges/{id}/toggle  → sch_college_toggle  停用/启用
+ *   GET    /api/school/colleges              → sch_college_list    学院列表
+ *   POST   /api/school/colleges              → sch_college_create  新增学院
+ *   PUT    /api/school/colleges/{id}         → sch_college_update  修改学院
+ *   POST   /api/school/colleges/{id}/toggle  → sch_college_toggle  停用/启用
+ *   DELETE /api/school/colleges/{id}         → sch_college_delete  删除学院
  */
 #if 1
 
@@ -29,8 +30,9 @@
 void sch_college_list(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
     MYSQL_RES *res = db_query(
-        "SELECT college_id, college_name, college_code, description, status, created_at "
-        "FROM colleges ORDER BY college_id");
+        "SELECT c.college_id, c.college_name, c.college_code, c.description, c.status, c.created_at, "
+        "(SELECT COUNT(*) FROM majors WHERE college_id=c.college_id) AS major_count "
+        "FROM colleges c ORDER BY c.college_id");
     api_send_result_data(ctx, res);
 }
 
@@ -120,6 +122,29 @@ void sch_college_toggle(ApiContext *ctx) {
                "VALUES (%d, 'toggle_college', 'colleges', %d, '切换学院状态')",
                ctx->user->user_id, id);
     api_ok_msg(ctx, now ? "已启用" : "已停用");
+}
+
+/* DELETE /api/school/colleges/{id} */
+void sch_college_delete(ApiContext *ctx) {
+    if (!api_require_school_admin(ctx)) return;
+    int id = api_get_path_int(ctx, 2);
+    if (id <= 0) { api_error(ctx, ERR_INPUT, "学院ID非法"); return; }
+
+    /* 检查该学院下是否有专业 */
+    int used = db_query_int("SELECT COUNT(*) FROM majors WHERE college_id=%d", id);
+    if (used > 0) { api_error(ctx, ERR_STATUS, "该学院下仍有专业，无法删除"); return; }
+
+    /* 检查该学院下是否有社团 */
+    int club_used = db_query_int("SELECT COUNT(*) FROM clubs WHERE college_id=%d", id);
+    if (club_used > 0) { api_error(ctx, ERR_STATUS, "该学院下仍有社团，无法删除"); return; }
+
+    int ok = db_execute("DELETE FROM colleges WHERE college_id=%d", id);
+    if (ok <= 0) { api_error(ctx, ERR_NOT_FOUND, "学院不存在"); return; }
+
+    db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
+               "VALUES (%d, 'delete_college', 'colleges', %d, '删除学院')",
+               ctx->user->user_id, id);
+    api_ok_msg(ctx, "已删除");
 }
 
 #endif /* 备用代码结束 */

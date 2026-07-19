@@ -60,6 +60,7 @@ static const Route ROUTES[] = {
 
     /* 学院管理 */
     { "POST", "/api/school/colleges/*/toggle", sch_college_toggle, 1 },
+    { "DELETE", "/api/school/colleges/*",       sch_college_delete, 1 },
     { "PUT",  "/api/school/colleges/*",        sch_college_update, 1 },
     { "POST", "/api/school/colleges",          sch_college_create, 1 },
     { "GET",  "/api/school/colleges",          sch_college_list,   1 },

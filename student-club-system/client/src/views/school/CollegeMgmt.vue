@@ -15,9 +15,10 @@
             @current-change="selectCollege">
             <el-table-column prop="college_name" label="学院名称" />
             <el-table-column prop="major_count" label="专业数" width="70" />
-            <el-table-column label="操作" width="100">
+            <el-table-column label="操作" width="150">
               <template #default="{ row }">
                 <el-button link type="primary" @click.stop="openCollegeForm(row)">编辑</el-button>
+                <el-button link type="danger" @click.stop="deleteCollege(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -115,6 +116,13 @@ async function deleteMajor(row) {
   await ElMessageBox.confirm('确认删除该专业？', '提示', { type: 'warning' })
   const res = await api.delete('/api/school/majors/' + row.major_id)
   if (res.code === 0) { ElMessage.success('已删除'); selectCollege(selectedCollege.value) }
+}
+
+async function deleteCollege(row) {
+  await ElMessageBox.confirm(`确认删除学院「${row.college_name}」？删除前请确保该学院下无专业和社团。`, '提示', { type: 'warning' })
+  const res = await api.delete('/api/school/colleges/' + row.college_id)
+  if (res.code === 0) { ElMessage.success('已删除'); loadColleges() }
+  else ElMessage.error(res.msg)
 }
 
 onMounted(loadColleges)

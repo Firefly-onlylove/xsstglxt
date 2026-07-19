@@ -75,6 +75,7 @@ void sch_college_list(ApiContext *ctx);      /* GET    /api/school/colleges */
 void sch_college_create(ApiContext *ctx);    /* POST   /api/school/colleges */
 void sch_college_update(ApiContext *ctx);    /* PUT    /api/school/colleges/{id} */
 void sch_college_toggle(ApiContext *ctx);    /* POST   /api/school/colleges/{id}/toggle */
+void sch_college_delete(ApiContext *ctx);    /* DELETE /api/school/colleges/{id} */
 
 /* 专业管理 */
 void sch_major_list(ApiContext *ctx);        /* GET    /api/school/majors?college_id= */
