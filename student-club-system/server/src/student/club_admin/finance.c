@@ -100,12 +100,11 @@ void club_finance_create(ApiContext *ctx) {
     }
 
     char *e_desc = db_escape(description);
-    const char *op_name = ctx->user ? ctx->user->real_name : "";
     int rc = db_execute(
-        "INSERT INTO finance (club_id, type, amount, description, operator_id, operator_name, record_time) "
-        "VALUES (%d, '%s', %.2f, '%s', %d, '%s', NOW())",
+        "INSERT INTO finance (club_id, type, amount, description, operator_id, record_time) "
+        "VALUES (%d, '%s', %.2f, '%s', %d, NOW())",
         club_id, type, amount, e_desc,
-        ctx->user ? ctx->user->user_id : 0, op_name);
+        ctx->user ? ctx->user->user_id : 0);
     free(e_desc);
 
     if (rc < 0) { api_error(ctx, ERR_DB, "添加失败"); return; }
@@ -156,19 +155,22 @@ void club_reimb_list(ApiContext *ctx) {
 }
 
 /* POST /api/club/{id}/reimbursements — 提交报销
- * multipart/form-data: amount, description, receipt(文件)
- * 发票图片保存到 receipts/ 目录，记录相对路径。 */
+ * application/json: amount, description, receipt_path
+ * 发票图片已通过 /upload-receipt 预先上传，receipt_path 即返回的路径。 */
 void club_reimb_create(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
     if (!club_require_manager(ctx, club_id)) return;
 
-    double amount = api_get_form_double(ctx, "amount", 0);
+    double amount = api_get_json_double(ctx, "amount", 0);
     char description[512] = "";
-    api_get_form_str(ctx, "description", description, sizeof(description));
+    api_get_json_str(ctx, "description", description, sizeof(description));
+    char receipt_path[256] = "";
+    api_get_json_str(ctx, "receipt_path", receipt_path, sizeof(receipt_path));
 
     if (amount <= 0) { api_error(ctx, ERR_VALIDATION, "报销金额必须大于0"); return; }
     if (utils_is_empty(description)) { api_error(ctx, ERR_VALIDATION, "请填写报销事由"); return; }
+    if (utils_is_empty(receipt_path)) { api_error(ctx, ERR_VALIDATION, "请上传发票"); return; }
 
     /* 单次上限校验（取自社团所属学院的配置，默认 REIMB_SINGLE_LIMIT） */
     double single_limit = db_query_double(
@@ -191,12 +193,6 @@ void club_reimb_create(ApiContext *ctx) {
     if (period_limit > 0 && month_used + amount > period_limit) {
         api_error(ctx, ERR_STATUS, "超过本月报销累计上限"); return;
     }
-
-    /* 保存发票图片：字段名 receipt。返回相对路径写入库。 */
-    char receipt_path[256] = "";
-    int up = api_save_uploaded_file(ctx, "receipt", "receipts", receipt_path,
-                                    sizeof(receipt_path));
-    if (up < 0) { api_error(ctx, ERR_INPUT, "发票图片上传失败"); return; }
 
     char *e_desc = db_escape(description);
     char *e_path = db_escape(receipt_path);

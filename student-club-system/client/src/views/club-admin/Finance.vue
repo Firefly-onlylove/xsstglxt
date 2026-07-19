@@ -18,8 +18,8 @@
         <div style="text-align:right;margin-bottom:12px">
           <el-button type="primary" @click="openAddRecord">+ 新增收支</el-button>
         </div>
-        <FilterBar @search="loadRecords" @reset="()=>{recFilter={};loadRecords()}">
-          <el-select v-model="recFilter.type" placeholder="类型" clearable style="width:110px">
+        <FilterBar @search="loadRecords" @reset="()=>{recFilter.value={type:''};loadRecords()}">
+          <el-select v-model="recFilter.type" placeholder="类型" clearable style="width:110px" @change="loadRecords">
             <el-option label="收入" value="income" />
             <el-option label="支出" value="expense" />
           </el-select>
@@ -37,7 +37,7 @@
 
       <el-tab-pane label="报销申请" name="reimbursements">
         <div style="text-align:right;margin-bottom:12px">
-          <el-button type="primary" @click="reimbVisible = true">+ 申请报销</el-button>
+          <el-button type="primary" @click="openReimb">+ 申请报销</el-button>
         </div>
         <DataTable :data="reimbs" :columns="reimbCols" :total="reimbTotal" :loading="loading"
           @page-change="e=>{reimbPage=e.page;loadReimbs()}">
@@ -79,11 +79,11 @@
         <el-form-item label="金额" prop="amount" :rules="[{required:true}]">
           <el-input-number v-model="reimbForm.amount" :min="0.01" :precision="2" style="width:100%" />
         </el-form-item>
-        <el-form-item label="用途" prop="purpose" :rules="[{required:true}]">
-          <el-input v-model="reimbForm.purpose" type="textarea" :rows="2" />
+        <el-form-item label="用途" prop="description" :rules="[{required:true}]">
+          <el-input v-model="reimbForm.description" type="textarea" :rows="2" />
         </el-form-item>
         <el-form-item label="发票">
-          <el-upload :action="uploadUrl" :on-success="onUploadSuccess" :limit="1" accept="image/*">
+          <el-upload :action="uploadUrl" :on-success="onUploadSuccess" :limit="1" accept="image/*" :headers="{'ngrok-skip-browser-warning':'1'}" :with-credentials="true">
             <el-button type="primary" plain>上传发票图片</el-button>
           </el-upload>
           <span v-if="reimbForm.receipt_path" style="font-size:12px;color:#36CFC9">已上传</span>
@@ -113,12 +113,12 @@ const summary = ref([
   { label: '账户余额', value: null, icon: 'Wallet',    color: '#1677FF', bg: '#E6F4FF' },
   { label: '待审批报销', value: null, icon: 'Warning', color: '#FF7D00', bg: '#FFF7E6' }
 ])
-const records = ref([]); const recTotal = ref(0); const recPage = ref(1); const recFilter = ref({})
+const records = ref([]); const recTotal = ref(0); const recPage = ref(1); const recFilter = ref({ type: '' })
 const reimbs  = ref([]); const reimbTotal = ref(0); const reimbPage = ref(1)
 const addRecordVisible = ref(false); const reimbVisible = ref(false)
 const recFormRef = ref(); const reimbFormRef = ref()
 const recForm   = ref({ type: 'income', amount: 0, description: '', date: '' })
-const reimbForm = ref({ amount: 0, purpose: '', receipt_path: '' })
+const reimbForm = ref({ amount: null, description: '', receipt_path: '' })
 const { clubId } = useClub()
 
 const uploadUrl = computed(() => '/api/club/' + clubId.value + '/upload-receipt')
@@ -163,10 +163,12 @@ async function loadReimbs() {
   if (res.code === 0) { reimbs.value = res.data.list || []; reimbTotal.value = res.data.total || 0 }
 }
 function openAddRecord() { recForm.value = { type: 'income', amount: 0, description: '', date: '' }; addRecordVisible.value = true }
+function openReimb() { reimbForm.value = { amount: null, description: '', receipt_path: '' }; reimbVisible.value = true }
 async function saveRecord() {
   await recFormRef.value.validate()
   const res = await api.post('/api/club/' + clubId.value + '/finance', recForm.value)
   if (res.code === 0) { ElMessage.success('已添加'); addRecordVisible.value = false; loadRecords() }
+  else ElMessage.error(res.msg || '添加失败')
 }
 async function deleteRecord(row) {
   await ElMessageBox.confirm('确认删除该记录？', '提示', { type: 'warning' })
