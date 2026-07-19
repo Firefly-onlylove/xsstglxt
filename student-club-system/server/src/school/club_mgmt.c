@@ -150,4 +150,26 @@ void sch_club_dissolve(ApiContext *ctx) {
     api_ok_msg(ctx, "社团已解散");
 }
 
+/* POST /api/school/clubs/{id}/rename  body: name */
+void sch_club_rename(ApiContext *ctx) {
+    if (!api_require_school_admin(ctx)) return;
+    int club_id = api_get_path_int(ctx, 2);
+    if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
+
+    char name[128] = "";
+    if (!api_get_json_str(ctx, "name", name, sizeof(name)))
+        api_get_param(ctx, "name", name, sizeof(name));
+    if (utils_is_empty(name)) { api_error(ctx, ERR_INPUT, "请输入新名称"); return; }
+
+    char *en = db_escape(name);
+    int ok = db_execute("UPDATE clubs SET club_name='%s' WHERE club_id=%d", en, club_id);
+    free(en);
+    if (ok <= 0) { api_error(ctx, ERR_NOT_FOUND, "社团不存在"); return; }
+
+    db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
+               "VALUES (%d, 'rename_club', 'clubs', %d, '重命名社团')",
+               ctx->user->user_id, club_id);
+    api_ok_msg(ctx, "社团已重命名");
+}
+
 #endif /* 备用代码结束 */

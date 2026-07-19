@@ -68,6 +68,7 @@ void sch_club_list(ApiContext *ctx);         /* GET  /api/school/clubs */
 void sch_club_detail(ApiContext *ctx);       /* GET  /api/school/clubs/{id} */
 void sch_club_set_level(ApiContext *ctx);    /* POST /api/school/clubs/{id}/level */
 void sch_club_dissolve(ApiContext *ctx);     /* POST /api/school/clubs/{id}/dissolve */
+void sch_club_rename(ApiContext *ctx);       /* POST /api/school/clubs/{id}/rename */
 
 /* 学院管理 */
 void sch_college_list(ApiContext *ctx);      /* GET    /api/school/colleges */

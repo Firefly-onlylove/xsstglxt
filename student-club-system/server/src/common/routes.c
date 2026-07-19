@@ -54,6 +54,7 @@ static const Route ROUTES[] = {
     { "POST", "/api/school/clubs/*/reject",   sch_club_reject,    1 },
     { "POST", "/api/school/clubs/*/level",    sch_club_set_level, 1 },
     { "POST", "/api/school/clubs/*/dissolve", sch_club_dissolve,  1 },
+    { "POST", "/api/school/clubs/*/rename",   sch_club_rename,    1 },
     { "GET",  "/api/school/clubs/*",          sch_club_detail,    1 },
     { "GET",  "/api/school/clubs",            sch_club_list,      1 },
 
