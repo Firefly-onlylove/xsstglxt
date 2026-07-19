@@ -1,6 +1,7 @@
 # SCMS Launcher
 # Usage: .\start.ps1 [command]
-#   local     - 本地模式（默认）
+#   (无参数)  → 本地模式
+#   local     - 本地模式
 #   public    - ngrok 公网模式
 #   build     - 仅编译后端
 #   rebuild   - 重新编译后端
