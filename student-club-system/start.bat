@@ -100,6 +100,9 @@ if exist "%PD%\db_config.ini" (
     )
 )
 
+for /f "tokens=*" %%x in ("%MYSQL_PASS%") do set "MYSQL_PASS=%%x"
+for /f "tokens=*" %%x in ("%MYSQL_USER%") do set "MYSQL_USER=%%x"
+
 echo [*] 正在检查 MySQL...
 set "MYSQL_SVC="
 for %%s in (MySQL80 MySQL84 MySQL MySQL8.0) do (
