@@ -2,20 +2,34 @@
 chcp 65001 >nul 2>nul
 setlocal enabledelayedexpansion
 
-set "PD=C:\77FA6~1.17\STUDEN~1"
-set "MYSQL=C:\Program Files\MySQL\MySQL Server 8.0"
-set "MINGW=C:\mingw4\mingw64"
+set "PD=%~dp0"
+cd /d "%PD%" >nul 2>&1
+
 set "PORT=8000"
 set "NGROK=%USERPROFILE%\ngrok.exe"
 
-cd /d "%PD%" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Cannot access project
-    pause
-    exit /b 1
-)
+for %%d in (
+    "C:\mingw4\mingw64"
+    "C:\msys64\mingw64"
+    "C:\mingw64"
+) do if exist "%%~d\bin\gcc.exe" set "MINGW=%%~d" & goto :found_mingw
+echo [ERROR] MinGW not found. Please install MinGW-w64 or set MINGW path.
+pause & exit /b 1
+:found_mingw
 
-set "PATH=%MINGW%\bin;%MYSQL%\bin;%MYSQL%\lib;%PD%;%PATH%"
+for %%d in (
+    "C:\Program Files\MySQL\MySQL Server 8.0"
+    "C:\Program Files\MySQL\MySQL Server 8.4"
+) do if exist "%%~d\bin\mysql.exe" set "MYSQL=%%~d" & goto :found_mysql
+echo [ERROR] MySQL not found. Please install MySQL or set MYSQL path.
+pause & exit /b 1
+:found_mysql
+
+set "PATH=%MINGW%\bin;%MYSQL%\bin;%MYSQL%\lib;%PATH%"
+
+set "MAKE=mingw32-make"
+if not exist "%MINGW%\bin\mingw32-make.exe" set "MAKE=make"
+if not exist "%MINGW%\bin\%MAKE%.exe" set "MAKE=mingw32-make"
 
 if /i "%1"=="stop" call :do_stop & exit /b 0
 if /i "%1"=="build"    set "MODE=local" & set "DO_BUILD=1" & goto :prepare
@@ -72,14 +86,23 @@ echo ============================================================
 echo.
 
 echo [*] Checking MySQL...
-sc query MySQL80 | findstr "STATE" | findstr "4" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo     Starting MySQL...
-    net start MySQL80 >nul 2>&1
+set "MYSQL_SVC="
+for %%s in (MySQL80 MySQL84 MySQL MySQL8.0) do (
+    sc query %%s >nul 2>&1
+    if !errorlevel! equ 0 set "MYSQL_SVC=%%s"
+)
+if "%MYSQL_SVC%"=="" (
+    echo     [WARN] MySQL service not found, trying to start anyway
+) else (
+    sc query "%MYSQL_SVC%" | findstr "STATE" | findstr "4" >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo     Starting MySQL service '%MYSQL_SVC%'...
+        net start "%MYSQL_SVC%" >nul 2>&1
+    )
 )
 mysql -u root -p123456789 -e "SELECT 1" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo     [ERROR] Database connection failed
+    echo     [ERROR] Database connection failed. Check password/config.
     pause & exit /b 1
 )
 echo     MySQL ready
@@ -122,15 +145,15 @@ if "%DO_ALL%"=="1"      ( call :frontend & call :rebuild )
 
 if not "%MODE%"=="public" goto :skip_ngrok
 if not exist "%NGROK%" (
-    echo     [WARN] ngrok not found, LAN mode only
+    echo     [WARN] ngrok not found at %NGROK%, LAN mode only
     goto :skip_ngrok
 )
 echo [*] Starting ngrok tunnel...
-start "ngrok" "%NGROK%" http %PORT% >nul 2>&1
+start "ngrok" "%NGROK%" http %PORT% --log=stdout >nul 2>&1
 echo     Waiting for tunnel (up to 15s)...
+set "NGROK_READY=0"
 for /L %%i in (1,1,15) do (
-    ping -n 2 127.0.0.1 >nul
-    curl -s http://127.0.0.1:4040/api/tunnels 2>nul | findstr "public_url" >nul 2>&1
+    powershell -Command "try { $r=Invoke-RestMethod -Uri 'http://127.0.0.1:4040/api/tunnels' -TimeoutSec 2; if ($r.tunnels) { exit 0 } } catch {} exit 1" >nul 2>&1
     if !errorlevel! equ 0 set "NGROK_READY=1"
 )
 if "%NGROK_READY%"=="1" (echo     ngrok tunnel ready) else (echo     [WARN] ngrok may still be starting...)
@@ -161,7 +184,7 @@ exit /b 0
 :build
 echo [*] Building backend...
 cd /d "%PD%\server"
-mingw32-make -j4
+%MAKE% -j4
 if %errorlevel% neq 0 ( echo [ERROR] Build failed & cd /d "%PD%" & pause & exit /b 1 )
 echo     Build done
 cd /d "%PD%"
@@ -170,8 +193,8 @@ exit /b 0
 :rebuild
 echo [*] Rebuilding backend...
 cd /d "%PD%\server"
-mingw32-make clean >nul 2>&1
-mingw32-make -j4
+%MAKE% clean >nul 2>&1
+%MAKE% -j4
 if %errorlevel% neq 0 ( echo [ERROR] Build failed & cd /d "%PD%" & pause & exit /b 1 )
 echo     Rebuild done
 cd /d "%PD%"
