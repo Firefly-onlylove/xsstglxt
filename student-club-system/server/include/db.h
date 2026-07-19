@@ -54,6 +54,7 @@ int db_rollback(void);
 char       *db_escape(const char *str);         /* 返回 malloc 的转义串，需 free；str 为 NULL 返回空串 */
 const char *db_error(void);                     /* 最近一次错误描述 */
 int         db_ping(void);                       /* 连接保活检测 */
+const DBConfig *db_get_config(void);              /* 获取数据库连接配置（供备份等模块读取密码） */
 
 /* ── 便捷取值（结果集第一行第一列） ── */
 int    db_query_int(const char *fmt, ...);       /* 常用于 COUNT(*)，无结果返回 0 */

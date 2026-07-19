@@ -9,14 +9,14 @@
             <el-form-item label="系统名称">
               <el-input v-model="config.system_name" />
             </el-form-item>
-            <el-form-item label="每学期社团上限（个）">
-              <el-input-number v-model="config.max_clubs_per_student" :min="1" :max="20" />
+            <el-form-item label="校级社团人数上限">
+              <el-input-number v-model="config.max_members_school" :min="5" :max="500" />
             </el-form-item>
-            <el-form-item label="社团成员上限（人）">
+            <el-form-item label="院级社团人数上限">
+              <el-input-number v-model="config.max_members_college" :min="5" :max="500" />
+            </el-form-item>
+            <el-form-item label="社团成员上限（全局）">
               <el-input-number v-model="config.max_members_per_club" :min="5" :max="500" />
-            </el-form-item>
-            <el-form-item label="报名截止提前（分钟）">
-              <el-input-number v-model="config.signup_close_before_min" :min="0" :max="1440" />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="saving" @click="saveConfig">保存配置</el-button>
@@ -31,14 +31,21 @@
             <el-icon><Download /></el-icon>立即备份
           </el-button>
           <el-table :data="backups" size="small" border>
-            <el-table-column prop="filename" label="文件名" show-overflow-tooltip />
-            <el-table-column prop="size" label="大小" width="80" />
-            <el-table-column prop="created_at" label="时间" width="120" />
-            <el-table-column label="操作" width="60">
+            <el-table-column prop="file_path" label="文件名" show-overflow-tooltip />
+            <el-table-column label="大小" width="80">
               <template #default="{ row }">
-                <el-button link type="primary" @click="downloadBackup(row)">下载</el-button>
+                {{ row.file_size ? (row.file_size / 1024).toFixed(1) + ' KB' : '-' }}
               </template>
             </el-table-column>
+            <el-table-column prop="operator" label="操作人" width="80" />
+            <el-table-column prop="status" label="状态" width="70">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 'success' ? 'success' : 'danger'" size="small">
+                  {{ row.status === 'success' ? '成功' : '失败' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="created_at" label="时间" width="160" />
           </el-table>
         </div>
       </el-col>
@@ -53,15 +60,23 @@ import { ElMessage } from 'element-plus'
 
 const saving  = ref(false)
 const backing = ref(false)
-const config  = ref({ system_name: '', max_clubs_per_student: 3, max_members_per_club: 100, signup_close_before_min: 30 })
+const config  = ref({ system_name: '', max_members_school: 60, max_members_college: 120, max_members_per_club: 100 })
 const backups = ref([])
 
 async function saveConfig() {
   saving.value = true
   const res = await api.post('/api/school/config', config.value)
   saving.value = false
-  if (res.code === 0) ElMessage.success('配置已保存')
-  else ElMessage.error(res.msg)
+  if (res.code === 0) {
+    ElMessage.success('配置已保存')
+    // 更新系统名称：写入 localStorage 并发送自定义事件通知 MainLayout
+    if (config.value.system_name) {
+      localStorage.setItem('scms_system_name', config.value.system_name)
+      window.dispatchEvent(new CustomEvent('scms:title-updated', { detail: config.value.system_name }))
+    }
+  } else {
+    ElMessage.error(res.msg)
+  }
 }
 
 async function doBackup() {
@@ -71,8 +86,6 @@ async function doBackup() {
   if (res.code === 0) { ElMessage.success('备份成功'); loadBackups() }
   else ElMessage.error(res.msg)
 }
-
-function downloadBackup(row) { window.open('/api/school/backup/download/' + row.backup_id) }
 
 async function loadBackups() {
   const res = await api.get('/api/school/backups')

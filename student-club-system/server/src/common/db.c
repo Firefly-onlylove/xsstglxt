@@ -270,6 +270,10 @@ int db_ping(void) {
     return r == 0 ? OK : ERR_DB;
 }
 
+const DBConfig *db_get_config(void) {
+    return &g_db.cfg;
+}
+
 /* ── 便捷取值 ── */
 int db_query_int(const char *fmt, ...) {
     char sql[SQL_BUF_SIZE];

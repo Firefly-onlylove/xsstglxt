@@ -3,7 +3,7 @@
     <el-header class="top-nav">
       <div class="nav-left">
         <el-icon class="logo-icon"><School /></el-icon>
-        <span class="system-title">SCMS · 学生社团管理系统</span>
+        <span class="system-title">{{ systemName }}</span>
       </div>
       <div class="nav-menu">
         <el-menu mode="horizontal" :default-active="activeMenu" router :ellipsis="false"
@@ -50,6 +50,7 @@ const route = useRoute()
 const router = useRouter()
 const user = ref(null)
 const unreadCount = ref(0)
+const systemName = ref(localStorage.getItem('scms_system_name') || 'SCMS · 学生社团管理系统')
 
 const activeMenu = computed(() => route.path)
 
@@ -111,7 +112,13 @@ async function handleUserCmd(cmd) {
   }
 }
 
-onMounted(loadUser)
+onMounted(() => {
+  loadUser()
+  // 监听系统名称变更事件（SystemConfig 保存时触发）
+  window.addEventListener('scms:title-updated', (e) => {
+    systemName.value = e.detail
+  })
+})
 </script>
 
 <style scoped>

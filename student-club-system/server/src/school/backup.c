@@ -46,8 +46,18 @@ void sch_backup_create(ApiContext *ctx) {
      * 注意：生产环境不要把密码明文放命令行，应使用 --defaults-extra-file。
      * 这里为教学演示保持简单，实际密码建议从 db_config.ini 读取后写入临时选项文件。 */
     char cmd[600];
+
+    /* 确保 backup 目录存在 */
+    #ifdef _WIN32
+        system("if not exist storage\\backups mkdir storage\\backups");
+    #else
+        system("mkdir -p storage/backups");
+    #endif
+
+    const DBConfig *dbcfg = db_get_config();
     snprintf(cmd, sizeof(cmd),
-             "mysqldump -h 127.0.0.1 -u root scms_db > \"%s\"", filepath);
+             "mysqldump -h %s -u %s -p%s %s > \"%s\" 2>&1",
+             dbcfg->host, dbcfg->user, dbcfg->password, dbcfg->database, filepath);
 
     int rc = system(cmd);
 
