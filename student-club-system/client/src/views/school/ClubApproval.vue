@@ -17,6 +17,12 @@
 
     <DataTable :data="tableData" :columns="columns" :total="total" :loading="loading"
       @page-change="onPage">
+      <template #category="{ row }">
+        <span>{{ categoryLabel(row.category) }}</span>
+      </template>
+      <template #college_name="{ row }">
+        <span>{{ row.level === 'school' ? '学校' : row.college_name }}</span>
+      </template>
       <template #status="{ row }">
         <el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
       </template>
@@ -36,17 +42,19 @@
         <el-descriptions-item label="社团名称">{{ current.club_name }}</el-descriptions-item>
         <el-descriptions-item label="类型">{{ current.category }}</el-descriptions-item>
         <el-descriptions-item label="申请人">{{ current.creator }}</el-descriptions-item>
-        <el-descriptions-item label="所属学院">{{ current.college_name }}</el-descriptions-item>
+        <el-descriptions-item label="附属">{{ current.college_name }}</el-descriptions-item>
         <el-descriptions-item label="级别">{{ current.level === 'school' ? '校级' : current.level === 'college' ? '院级' : '-' }}</el-descriptions-item>
         <el-descriptions-item label="申请时间">{{ current.created_at }}</el-descriptions-item>
         <el-descriptions-item label="简介" :span="2">{{ current.description }}</el-descriptions-item>
         <el-descriptions-item label="驳回理由" :span="2" v-if="current.status === 'rejected'">{{ current.reject_reason }}</el-descriptions-item>
       </el-descriptions>
-      <template #footer v-if="current?.status === 'pending'">
+      <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
-        <el-button type="success" @click="approveFromDetail">通过（校级）</el-button>
-        <el-button type="primary" @click="showCollegeApprove">通过（院级）</el-button>
-        <el-button type="danger" @click="openReject(current)">驳回</el-button>
+        <template v-if="current?.status === 'pending'">
+          <el-button type="success" @click="approveFromDetail">通过（校级）</el-button>
+          <el-button type="primary" @click="showCollegeApprove">通过（院级）</el-button>
+          <el-button type="danger" @click="openReject(current)">驳回</el-button>
+        </template>
       </template>
     </el-dialog>
 
@@ -103,9 +111,9 @@ const rejectData = ref({ reason: '' })
 
 const columns = [
   { prop: 'club_name',   label: '社团名称' },
-  { prop: 'category',    label: '类型',   width: 80 },
+  { slot: 'category',    label: '类型',   width: 80 },
   { prop: 'creator',     label: '申请人', width: 100 },
-  { prop: 'college_name', label: '学院',   width: 120 },
+  { slot: 'college_name', label: '附属',   width: 120 },
   { prop: 'created_at',  label: '申请时间', width: 160 },
   { slot: 'status',      label: '状态',   width: 90 },
   { slot: 'actions',     label: '操作',   width: 240, fixed: 'right' }
@@ -117,6 +125,10 @@ const collegeForm = ref({ college_id: null })
 
 const statusLabel = s => ({ pending: '待审批', approved: '已通过', rejected: '已驳回' }[s] || s)
 const statusType  = s => ({ pending: 'warning', approved: 'success', rejected: 'danger' }[s] || '')
+const categoryLabel = c => ({
+  art: '文艺', academic: '学术', sports: '体育', practice: '实践', other: '其他',
+  学术: '学术', 文艺: '文艺', 体育: '体育', 实践: '实践', 其他: '其他'
+}[c] || c)
 
 function onTabChange() { page.value = 1; loadData() }
 

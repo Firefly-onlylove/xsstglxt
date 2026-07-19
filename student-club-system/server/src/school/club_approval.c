@@ -113,7 +113,8 @@ void sch_club_approved_history(ApiContext *ctx) {
     char sql[1024];
     snprintf(sql, sizeof(sql),
         "SELECT cl.club_id, cl.club_name, cl.category, cl.level, cl.status, "
-        "cl.reject_reason, COALESCE(col.college_name,'-') AS college_name, "
+        "cl.reject_reason, cl.description, cl.created_at, "
+        "COALESCE(col.college_name,'-') AS college_name, "
         "u.real_name AS creator, cl.updated_at "
         "FROM clubs cl "
         "LEFT JOIN colleges col ON cl.college_id=col.college_id "

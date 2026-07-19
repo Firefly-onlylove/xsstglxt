@@ -30,23 +30,33 @@
 void sch_dashboard(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
 
-    int total_clubs = db_query_int(
+    int active_clubs = db_query_int(
         "SELECT COUNT(*) FROM clubs WHERE status='approved'");
     int total_members = db_query_int(
         "SELECT COUNT(*) FROM members WHERE left_at IS NULL AND join_status='approved'");
-    int total_activities = db_query_int(
+    int monthly_activities = db_query_int(
         "SELECT COUNT(*) FROM activities WHERE status IN ('published','ongoing','completed')");
-    int pending_clubs = db_query_int(
+    int pending_approvals = db_query_int(
         "SELECT COUNT(*) FROM clubs WHERE status='pending'");
+
+    /* 最近20条操作日志 */
+    MYSQL_RES *log_res = db_query(
+        "SELECT u.real_name AS username, l.action, l.created_at "
+        "FROM logs l LEFT JOIN users u ON l.user_id=u.user_id "
+        "ORDER BY l.created_at DESC LIMIT 20");
+    char *logs_json = db_result_to_json_array(log_res);
+    mysql_free_result(log_res);
 
     JsonBuilder jb;
     json_init(&jb);
-    json_add_int(&jb, "total_clubs", total_clubs);
+    json_add_int(&jb, "active_clubs", active_clubs);
     json_add_int(&jb, "total_members", total_members);
-    json_add_int(&jb, "total_activities", total_activities);
-    json_add_int(&jb, "pending_clubs", pending_clubs);
+    json_add_int(&jb, "monthly_activities", monthly_activities);
+    json_add_int(&jb, "pending_approvals", pending_approvals);
+    json_add_raw(&jb, "recent_logs", logs_json ? logs_json : "[]");
     api_ok_data(ctx, json_finish(&jb));
     json_free(&jb);
+    free(logs_json);
 }
 
 #endif /* 备用代码结束 */
