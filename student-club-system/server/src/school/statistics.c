@@ -29,83 +29,84 @@
 void sch_stats(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
 
-    /* 1. 按类别统计社团数 */
-    MYSQL_RES *r1 = db_query(
-        "SELECT category, COUNT(*) AS cnt FROM clubs WHERE status='approved' "
-        "GROUP BY category ORDER BY cnt DESC");
-    /* 2. 按级别统计 */
-    MYSQL_RES *r2 = db_query(
-        "SELECT level, COUNT(*) AS cnt FROM clubs WHERE status='approved' GROUP BY level");
-    /* 3. 各学院社团/成员分布 */
-    MYSQL_RES *r3 = db_query(
-        "SELECT c.college_name, COUNT(cl.club_id) AS club_cnt, "
-        "COALESCE(SUM(cl.member_count),0) AS member_cnt "
-        "FROM colleges c LEFT JOIN clubs cl ON c.college_id=cl.college_id AND cl.status='approved' "
-        "WHERE c.status=1 GROUP BY c.college_id ORDER BY club_cnt DESC");
+    /* ── 4 个汇总卡片 ── */
+    int total_clubs = db_query_int(
+        "SELECT COUNT(*) FROM clubs WHERE status='approved'");
+    int total_members = db_query_int(
+        "SELECT COUNT(*) FROM members WHERE left_at IS NULL AND join_status='approved'");
+    int total_activities = db_query_int(
+        "SELECT COUNT(*) FROM activities");
+    int new_clubs_this_month = db_query_int(
+        "SELECT COUNT(*) FROM clubs WHERE status='approved' "
+        "AND created_at >= DATE_FORMAT(NOW(), '%%Y-%%m-01')");
 
-    /* 手动把三个结果集拼进一个 JSON 对象 */
-    /* 为简洁，用 JsonBuilder 逐段构造：{"by_category":[...],"by_level":[...],"by_college":[...]} */
-    /* 这里演示用一个辅助 lambda 风格的小函数把结果集转数组字符串。 */
-
-    /* 直接借助 api 内部能力较麻烦，改为拼接字符串。 */
-    /* 简化做法：分别用临时缓冲输出。实际项目可封装 result_to_array_string。 */
-
-    /* —— 由于 api 层未暴露"结果集转字符串"给业务层，这里改为三个字段各自查询计数后拼 —— */
-    (void)r1; (void)r2; (void)r3;
-    if (r1) mysql_free_result(r1);
-    if (r2) mysql_free_result(r2);
-    if (r3) mysql_free_result(r3);
-
-    /* 用 JsonBuilder 逐项 add_raw 拼装数组（数组内容用子查询循环生成） */
     JsonBuilder jb; json_init(&jb);
+    json_add_int(&jb, "total_clubs",           total_clubs);
+    json_add_int(&jb, "total_members",         total_members);
+    json_add_int(&jb, "total_activities",      total_activities);
+    json_add_int(&jb, "new_clubs_this_month",  new_clubs_this_month);
 
-    /* by_category */
+    /* college_stats — 各学院社团数 / 成员数 / 活动数 */
     {
-        char arr[2048] = "["; int first = 1;
         MYSQL_RES *r = db_query(
-            "SELECT category, COUNT(*) FROM clubs WHERE status='approved' GROUP BY category ORDER BY 2 DESC");
-        if (r) {
-            MYSQL_ROW row;
-            while ((row = mysql_fetch_row(r))) {
-                char item[256];
-                snprintf(item, sizeof(item), "%s{\"name\":\"%s\",\"value\":%s}",
-                         first ? "" : ",", utils_safe(row[0]), row[1]);
-                strncat(arr, item, sizeof(arr) - strlen(arr) - 1);
-                first = 0;
-            }
-            mysql_free_result(r);
-        }
-        strncat(arr, "]", sizeof(arr) - strlen(arr) - 1);
-        json_add_raw(&jb, "by_category", arr);
+            "SELECT col.college_name, "
+            "COUNT(DISTINCT cl.club_id) AS club_count, "
+            "COALESCE(SUM(cl.member_count),0) AS member_count, "
+            "COUNT(DISTINCT a.activity_id) AS activity_count "
+            "FROM colleges col "
+            "LEFT JOIN clubs cl ON col.college_id=cl.college_id AND cl.status='approved' "
+            "LEFT JOIN activities a ON cl.club_id=a.club_id "
+            "WHERE col.status=1 GROUP BY col.college_id ORDER BY club_count DESC");
+        char *arr = db_result_to_json_array(r);
+        json_add_raw(&jb, "college_stats", arr ? arr : "[]");
+        if (r) mysql_free_result(r);
+        free(arr);
     }
 
-    /* by_college */
+    /* top_clubs — 社团成员规模排名 TOP 10 */
     {
-        char arr[4096] = "["; int first = 1;
         MYSQL_RES *r = db_query(
-            "SELECT c.college_name, COUNT(cl.club_id), COALESCE(SUM(cl.member_count),0) "
-            "FROM colleges c LEFT JOIN clubs cl ON c.college_id=cl.college_id AND cl.status='approved' "
-            "WHERE c.status=1 GROUP BY c.college_id ORDER BY 2 DESC");
-        if (r) {
-            MYSQL_ROW row;
-            while ((row = mysql_fetch_row(r))) {
-                char item[512];
-                snprintf(item, sizeof(item),
-                         "%s{\"college\":\"%s\",\"clubs\":%s,\"members\":%s}",
-                         first ? "" : ",", utils_safe(row[0]), row[1], row[2]);
-                strncat(arr, item, sizeof(arr) - strlen(arr) - 1);
-                first = 0;
-            }
-            mysql_free_result(r);
-        }
-        strncat(arr, "]", sizeof(arr) - strlen(arr) - 1);
-        json_add_raw(&jb, "by_college", arr);
+            "SELECT c.club_name AS name, "
+            "COALESCE(col.college_name,'—') AS college_name, "
+            "c.member_count "
+            "FROM clubs c "
+            "LEFT JOIN colleges col ON c.college_id=col.college_id "
+            "WHERE c.status='approved' ORDER BY c.member_count DESC LIMIT 10");
+        char *arr = db_result_to_json_array(r);
+        json_add_raw(&jb, "top_clubs", arr ? arr : "[]");
+        if (r) mysql_free_result(r);
+        free(arr);
     }
 
-    int school_lv = db_query_int("SELECT COUNT(*) FROM clubs WHERE status='approved' AND level='school'");
-    int college_lv = db_query_int("SELECT COUNT(*) FROM clubs WHERE status='approved' AND level='college'");
-    json_add_int(&jb, "level_school", school_lv);
-    json_add_int(&jb, "level_college", college_lv);
+    /* type_distribution — 社团类型分布（含百分比） */
+    {
+        MYSQL_RES *r = db_query(
+            "SELECT category AS club_type, COUNT(*) AS count, "
+            "CONCAT(ROUND(COUNT(*)*100.0/"
+            "(SELECT COUNT(*) FROM clubs WHERE status='approved'),1),'%%') "
+            "AS percentage "
+            "FROM clubs WHERE status='approved' GROUP BY category ORDER BY count DESC");
+        char *arr = db_result_to_json_array(r);
+        json_add_raw(&jb, "type_distribution", arr ? arr : "[]");
+        if (r) mysql_free_result(r);
+        free(arr);
+    }
+
+    /* monthly_activities — 近 12 月活动趋势（含参与人次） */
+    {
+        MYSQL_RES *r = db_query(
+            "SELECT DATE_FORMAT(a.start_time,'%%Y-%%m') AS month, "
+            "COUNT(DISTINCT a.activity_id) AS activity_count, "
+            "COUNT(r.registration_id) AS participant_count "
+            "FROM activities a "
+            "LEFT JOIN registrations r ON a.activity_id=r.activity_id "
+            "WHERE a.start_time >= DATE_SUB(NOW(), INTERVAL 12 MONTH) "
+            "GROUP BY month ORDER BY month DESC");
+        char *arr = db_result_to_json_array(r);
+        json_add_raw(&jb, "monthly_activities", arr ? arr : "[]");
+        if (r) mysql_free_result(r);
+        free(arr);
+    }
 
     api_ok_data(ctx, json_finish(&jb));
     json_free(&jb);

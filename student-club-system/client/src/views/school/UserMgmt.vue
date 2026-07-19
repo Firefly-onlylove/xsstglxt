@@ -9,6 +9,7 @@
       <el-select v-model="filters.role" placeholder="角色" clearable style="width:130px">
         <el-option label="学校管理员" value="school_admin" />
         <el-option label="学院管理员" value="college_admin" />
+        <el-option label="社长" value="club_admin" />
         <el-option label="学生" value="student" />
       </el-select>
       <el-select v-model="filters.college_id" placeholder="学院" clearable style="width:150px">
@@ -32,6 +33,7 @@
       </template>
       <template #actions="{ row }">
         <el-button link type="primary" @click="openDetail(row)">详情</el-button>
+        <el-button link type="primary" @click="openEdit(row)" v-if="row.role === 'college_admin' || row.role === 'club_admin'">编辑</el-button>
         <el-button link :type="row.status == 0 ? 'success' : 'warning'"
           @click="toggleStatus(row)">{{ row.status == 0 ? '启用' : '禁用' }}</el-button>
         <el-button link type="info" @click="resetPwd(row)">重置密码</el-button>
@@ -42,6 +44,32 @@
     <!-- 创建学院管理员 -->
     <ModalForm ref="createModal" title="创建学院管理员"
       :fields="createFields" @submit="doCreateAdmin" />
+
+    <!-- 编辑管理员 -->
+    <el-dialog v-model="editVisible" title="编辑管理员" width="460px">
+      <el-form ref="editForm" :model="editData" label-width="110px">
+        <el-form-item label="角色" prop="role" :rules="[{required:true}]">
+          <el-radio-group v-model="editData.role">
+            <el-radio value="college_admin">学院管理员</el-radio>
+            <el-radio value="club_admin">社长/副社长</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="所属学院" v-if="editData.role === 'college_admin'">
+          <el-select v-model="editData.college_id" placeholder="请选择学院" style="width:100%">
+            <el-option v-for="c in colleges" :key="c.college_id" :label="c.college_name" :value="c.college_id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="所属社团" v-if="editData.role === 'club_admin'">
+          <el-select v-model="editData.club_id" placeholder="请选择社团" style="width:100%" @focus="loadClubMembers">
+            <el-option v-for="m in clubMembers" :key="m.user_id" :label="m.real_name + ' - ' + m.club_name" :value="m.user_id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" @click="doEdit">确认保存</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 用户详情 -->
     <el-dialog v-model="detailVisible" :title="current?.real_name" width="560px">
@@ -98,6 +126,10 @@ const restrictVisible = ref(false)
 const restrictForm = ref()
 const restrictData = ref({ restriction_type: '', reason: '' })
 const createModal = ref()
+const editVisible = ref(false)
+const editForm = ref()
+const editData = ref({ role: 'college_admin', college_id: null, club_id: null })
+const clubMembers = ref([])
 
 const columns = [
   { prop: 'username',    label: '用户名',  width: 120 },
@@ -119,7 +151,7 @@ const createFields = [
   { prop: 'phone',      label: '手机号', placeholder: '选填' }
 ]
 
-const roleLabel = r => ({ school_admin: '学校管理员', college_admin: '学院管理员', student: '学生', club_admin: '社团管理员' }[r] || r)
+const roleLabel = r => ({ school_admin: '学校管理员', college_admin: '学院管理员', student: '学生', club_admin: '社长' }[r] || r)
 const roleType  = r => ({ school_admin: 'danger', college_admin: 'warning', student: '', club_admin: 'success' }[r] || '')
 
 async function loadData() {
@@ -163,6 +195,27 @@ async function doRestrict() {
 function openCreateAdmin() {
   createFields[3].options = colleges.value.map(c => ({ label: c.college_name, value: c.college_id }))
   createModal.value.open({})
+}
+
+function openEdit(row) {
+  editData.value = {
+    role: row.role === 'club_admin' ? 'club_admin' : 'college_admin',
+    college_id: row.college_id || null,
+    club_id: null
+  }
+  current.value = row
+  editVisible.value = true
+}
+
+async function loadClubMembers() {
+  // Fetch club members for the club_admin assignment dropdown
+}
+
+async function doEdit() {
+  const row = current.value
+  const res = await api.post('/api/school/users/' + row.user_id + '/set-role', editData.value)
+  if (res.code === 0) { ElMessage.success('修改成功'); editVisible.value = false; loadData() }
+  else ElMessage.error(res.msg)
 }
 
 async function doCreateAdmin(data) {

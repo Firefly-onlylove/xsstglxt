@@ -45,17 +45,27 @@ void sch_college_create(ApiContext *ctx) {
     if (!name[0]) api_get_param(ctx, "name", name, sizeof(name));
     if (!code[0]) api_get_param(ctx, "code", code, sizeof(code));
 
-    if (utils_is_empty(name) || utils_is_empty(code)) {
-        api_error(ctx, ERR_INPUT, "学院名称和编码必填"); return;
+    if (utils_is_empty(name)) {
+        api_error(ctx, ERR_INPUT, "学院名称必填"); return;
     }
 
     /* 查重 */
-    int dup = db_query_int(
-        "SELECT COUNT(*) FROM colleges WHERE college_name='%s' OR college_code='%s'",
-        name, code);
+    char *en = db_escape(name);
+    int dup;
+    if (code[0]) {
+        dup = db_query_int(
+            "SELECT COUNT(*) FROM colleges WHERE college_name='%s' OR college_code='%s'",
+            name, code);
+    } else {
+        dup = db_query_int(
+            "SELECT COUNT(*) FROM colleges WHERE college_name='%s'",
+            name);
+    }
+    free(en);
     if (dup > 0) { api_error(ctx, ERR_DUPLICATE, "学院名称或编码已存在"); return; }
 
-    char *en = db_escape(name), *ec = db_escape(code), *ed = db_escape(desc);
+    char *ec = db_escape(code), *ed = db_escape(desc);
+    en = db_escape(name);
     int ok = db_execute(
         "INSERT INTO colleges (college_name, college_code, description) "
         "VALUES ('%s','%s','%s')", en, ec, ed);

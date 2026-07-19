@@ -15,6 +15,11 @@
     </FilterBar>
     <DataTable :data="tableData" :columns="columns" :total="total" :loading="loading"
       @page-change="onPage">
+      <template #level="{ row }">
+        <el-tag size="small" :type="row.level === 'school' ? 'danger' : 'warning'">
+          {{ row.level === 'school' ? '校级' : row.level === 'college' ? '院级' : row.level || '-' }}
+        </el-tag>
+      </template>
       <template #status="{ row }">
         <el-tag :type="row.status === 'approved' ? 'success' : 'info'" size="small">
           {{ row.status === 'approved' ? '正常' : row.status === 'dissolved' ? '已解散' : row.status }}
@@ -104,7 +109,7 @@ const columns = [
   { prop: 'college_name',  label: '学院',   width: 120 },
   { prop: 'president',     label: '社长',   width: 100 },
   { prop: 'member_count',  label: '成员数', width: 80 },
-  { prop: 'level',         label: '等级',   width: 80 },
+  { slot: 'level',         label: '等级',   width: 80 },
   { slot: 'status',        label: '状态',   width: 90 },
   { prop: 'created_at',    label: '创建时间', width: 120 },
   { slot: 'actions',       label: '操作',   width: 240, fixed: 'right' }

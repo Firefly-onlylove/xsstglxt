@@ -13,7 +13,7 @@
           </div>
           <el-table :data="colleges" size="small" highlight-current-row
             @current-change="selectCollege">
-            <el-table-column prop="name" label="学院名称" />
+            <el-table-column prop="college_name" label="学院名称" />
             <el-table-column prop="major_count" label="专业数" width="70" />
             <el-table-column label="操作" width="100">
               <template #default="{ row }">
@@ -27,11 +27,11 @@
       <el-col :span="14">
         <div class="card" style="height:600px;overflow:auto">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <b>专业列表{{ selectedCollege ? ' — ' + selectedCollege.name : '' }}</b>
+            <b>专业列表{{ selectedCollege ? ' — ' + selectedCollege.college_name : '' }}</b>
             <el-button type="primary" size="small" @click="openMajorForm()" :disabled="!selectedCollege">+ 新增专业</el-button>
           </div>
           <el-table :data="majors" size="small">
-            <el-table-column prop="name" label="专业名称" />
+            <el-table-column prop="major_name" label="专业名称" />
             <el-table-column prop="class_count" label="班级数" width="70" />
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
@@ -65,8 +65,8 @@ const editMajor      = ref(null)
 const collegeModal   = ref()
 const majorModal     = ref()
 
-const collegeFields = [{ prop: 'name', label: '学院名称', placeholder: '请输入学院名称' }]
-const majorFields   = [{ prop: 'name', label: '专业名称', placeholder: '请输入专业名称' }]
+const collegeFields = [{ prop: 'name', label: '学院名称', placeholder: '请输入学院名称' }, { prop: 'code', label: '学院编码', placeholder: '选填' }]
+const majorFields   = [{ prop: 'name', label: '专业名称', placeholder: '请输入专业名称' }, { prop: 'code', label: '专业编码', placeholder: '选填' }]
 
 async function loadColleges() {
   const res = await api.get('/api/school/colleges')
@@ -81,11 +81,11 @@ async function selectCollege(row) {
 
 function openCollegeForm(row) {
   editCollege.value = row || {}
-  collegeModal.value.open(row ? { name: row.name } : {})
+  collegeModal.value.open(row ? { name: row.college_name, code: row.code } : {})
 }
 function openMajorForm(row) {
   editMajor.value = row || {}
-  majorModal.value.open(row ? { name: row.name } : {})
+  majorModal.value.open(row ? { name: row.major_name, code: row.code } : {})
 }
 
 async function saveCollege(data) {

@@ -67,12 +67,15 @@ void sch_club_list(ApiContext *ctx) {
 
     MYSQL_RES *res = db_query(
         "SELECT cl.club_id, cl.club_name, cl.category, cl.level, cl.status, "
+        "cl.created_at, "
         "COALESCE(col.college_name,'-') AS college_name, "
         "COALESCE(u.real_name,'-') AS president, cl.member_count "
         "FROM clubs cl "
         "LEFT JOIN colleges col ON cl.college_id=col.college_id "
         "LEFT JOIN users u ON cl.president_id=u.user_id "
-        "%s ORDER BY cl.club_id DESC LIMIT %d OFFSET %d",
+        "%s ORDER BY CASE cl.status WHEN 'approved' THEN 0 ELSE 1 END, "
+        "CASE cl.level WHEN 'school' THEN 0 ELSE 1 END, "
+        "cl.member_count DESC LIMIT %d OFFSET %d",
         where, page_size, offset);
     api_send_result_paged(ctx, res, page, page_size, total);
 }

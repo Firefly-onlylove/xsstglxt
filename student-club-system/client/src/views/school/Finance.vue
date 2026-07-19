@@ -52,9 +52,9 @@
       <el-descriptions :column="2" border v-if="currentReimb">
         <el-descriptions-item label="社团">{{ currentReimb.club_name }}</el-descriptions-item>
         <el-descriptions-item label="金额">¥{{ currentReimb.amount }}</el-descriptions-item>
-        <el-descriptions-item label="用途" :span="2">{{ currentReimb.purpose }}</el-descriptions-item>
+        <el-descriptions-item label="用途" :span="2">{{ currentReimb.description }}</el-descriptions-item>
         <el-descriptions-item label="申请人">{{ currentReimb.applicant_name }}</el-descriptions-item>
-        <el-descriptions-item label="申请时间">{{ currentReimb.created_at }}</el-descriptions-item>
+        <el-descriptions-item label="申请时间">{{ currentReimb.submitted_at }}</el-descriptions-item>
         <el-descriptions-item label="学院审批">
           <el-tag size="small" :type="currentReimb.college_status==='approved'?'success':'warning'">
             {{ currentReimb.college_status==='approved'?'已通过':'待审批' }}
@@ -78,7 +78,7 @@ import DataTable from '@/components/DataTable.vue'
 const activeTab = ref('reimbursements')
 const loading = ref(false)
 const overview = ref([
-  { label: '全校总收入', value: null, icon: 'TrendCharts', color: '#36CFC9', bg: '#E6FFFB' },
+  { label: '全校社团总经费', value: null, icon: 'TrendCharts', color: '#36CFC9', bg: '#E6FFFB' },
   { label: '全校总支出', value: null, icon: 'Money', color: '#F53F3F', bg: '#FFF1F0' },
   { label: '待审批报销', value: null, icon: 'Warning', color: '#FF7D00', bg: '#FFF7E6' },
   { label: '已通过报销', value: null, icon: 'Checked', color: '#1677FF', bg: '#E6F4FF' }
@@ -94,9 +94,9 @@ const collegeFinance = ref([])
 const reimbCols = [
   { prop: 'club_name',      label: '社团',   width: 120 },
   { prop: 'amount',         label: '金额',   width: 90 },
-  { prop: 'purpose',        label: '用途' },
+  { prop: 'description',    label: '用途' },
   { prop: 'applicant_name', label: '申请人', width: 90 },
-  { prop: 'created_at',     label: '时间',   width: 120 },
+  { prop: 'submitted_at',     label: '时间',   width: 120 },
   { slot: 'status',         label: '状态',   width: 110 },
   { slot: 'actions',        label: '操作',   width: 160, fixed: 'right' }
 ]
@@ -116,12 +116,12 @@ function openReimbDetail(row) { currentReimb.value = row; reimbVisible.value = t
 async function approveReimb(row, pass) {
   if (!pass) {
     const { value: reason } = await ElMessageBox.prompt('驳回理由', '驳回', { inputValidator: v => v ? true : '请填写理由' })
-    const res = await api.post('/api/school/reimbursements/' + row.reimb_id + '/reject', { reason })
+    const res = await api.post('/api/school/reimbursements/' + row.reimbursement_id + '/reject', { comment: reason })
     if (res.code === 0) { ElMessage.success('已驳回'); loadReimb() }
     return
   }
   await ElMessageBox.confirm('确认通过此报销申请？', '提示', { type: 'warning' })
-  const res = await api.post('/api/school/reimbursements/' + row.reimb_id + '/approve', { approved: true })
+  const res = await api.post('/api/school/reimbursements/' + row.reimbursement_id + '/approve', { approved: true })
   if (res.code === 0) { ElMessage.success('已通过'); loadReimb() }
 }
 

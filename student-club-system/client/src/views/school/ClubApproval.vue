@@ -40,7 +40,7 @@
     <el-dialog v-model="detailVisible" title="社团申请详情" width="560px">
       <el-descriptions :column="2" border v-if="current">
         <el-descriptions-item label="社团名称">{{ current.club_name }}</el-descriptions-item>
-        <el-descriptions-item label="类型">{{ current.category }}</el-descriptions-item>
+        <el-descriptions-item label="类型">{{ categoryLabel(current.category) }}</el-descriptions-item>
         <el-descriptions-item label="申请人">{{ current.creator }}</el-descriptions-item>
         <el-descriptions-item label="附属">{{ current.college_name }}</el-descriptions-item>
         <el-descriptions-item label="级别">{{ current.level === 'school' ? '校级' : current.level === 'college' ? '院级' : '-' }}</el-descriptions-item>
@@ -95,7 +95,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import FilterBar from '@/components/FilterBar.vue'
 import DataTable from '@/components/DataTable.vue'
 
-const clubTypes = ['学术', '文艺', '体育', '实践', '其他']
+const clubTypes = ['文艺', '学术', '体育', '实践', '其他']
 const activeTab = ref('pending')
 const loading   = ref(false)
 const submitting = ref(false)
@@ -127,7 +127,7 @@ const statusLabel = s => ({ pending: '待审批', approved: '已通过', rejecte
 const statusType  = s => ({ pending: 'warning', approved: 'success', rejected: 'danger' }[s] || '')
 const categoryLabel = c => ({
   art: '文艺', academic: '学术', sports: '体育', practice: '实践', other: '其他',
-  学术: '学术', 文艺: '文艺', 体育: '体育', 实践: '实践', 其他: '其他'
+  '文艺': '文艺', '学术': '学术', '体育': '体育', '实践': '实践', '其他': '其他'
 }[c] || c)
 
 function onTabChange() { page.value = 1; loadData() }

@@ -65,17 +65,30 @@ const backups = ref([])
 
 async function saveConfig() {
   saving.value = true
-  const res = await api.post('/api/school/config', config.value)
+  const res = await api.post('/api/school/config', {
+    key: 'club_member_limit_school',
+    value: String(config.value.max_members_school)
+  })
+  if (res.code !== 0) { saving.value = false; ElMessage.error(res.msg); return }
+  await api.post('/api/school/config', {
+    key: 'club_member_limit_college',
+    value: String(config.value.max_members_college)
+  })
+  await api.post('/api/school/config', {
+    key: 'club_member_limit_global',
+    value: String(config.value.max_members_per_club)
+  })
+  if (config.value.system_name) {
+    await api.post('/api/school/config', {
+      key: 'system_name',
+      value: config.value.system_name
+    })
+  }
   saving.value = false
-  if (res.code === 0) {
-    ElMessage.success('配置已保存')
-    // 更新系统名称：写入 localStorage 并发送自定义事件通知 MainLayout
-    if (config.value.system_name) {
-      localStorage.setItem('scms_system_name', config.value.system_name)
-      window.dispatchEvent(new CustomEvent('scms:title-updated', { detail: config.value.system_name }))
-    }
-  } else {
-    ElMessage.error(res.msg)
+  ElMessage.success('配置已保存')
+  if (config.value.system_name) {
+    localStorage.setItem('scms_system_name', config.value.system_name)
+    window.dispatchEvent(new CustomEvent('scms:title-updated', { detail: config.value.system_name }))
   }
 }
 
@@ -94,7 +107,19 @@ async function loadBackups() {
 
 onMounted(async () => {
   const res = await api.get('/api/school/config')
-  if (res.code === 0) config.value = res.data
+  if (res.code === 0) {
+    const list = res.data.list || res.data || []
+    const map = {}
+    for (const item of list) {
+      map[item.config_key] = item.config_value
+    }
+    config.value = {
+      system_name: map.system_name || '',
+      max_members_school: parseInt(map.club_member_limit_school) || 60,
+      max_members_college: parseInt(map.club_member_limit_college) || 120,
+      max_members_per_club: parseInt(map.club_member_limit_global) || 100
+    }
+  }
   loadBackups()
 })
 </script>

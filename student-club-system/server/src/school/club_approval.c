@@ -68,6 +68,7 @@ void sch_club_pending(ApiContext *ctx) {
     char sql[1024];
     snprintf(sql, sizeof(sql),
         "SELECT cl.club_id, cl.club_name, cl.category, cl.level, "
+        "cl.college_id, "
         "COALESCE(col.college_name,'-') AS college_name, "
         "u.real_name AS creator, cl.description, cl.created_at, cl.status "
         "FROM clubs cl "
@@ -114,6 +115,7 @@ void sch_club_approved_history(ApiContext *ctx) {
     snprintf(sql, sizeof(sql),
         "SELECT cl.club_id, cl.club_name, cl.category, cl.level, cl.status, "
         "cl.reject_reason, cl.description, cl.created_at, "
+        "cl.college_id, "
         "COALESCE(col.college_name,'-') AS college_name, "
         "u.real_name AS creator, cl.updated_at "
         "FROM clubs cl "

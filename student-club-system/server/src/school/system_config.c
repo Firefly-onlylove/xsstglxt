@@ -36,32 +36,50 @@ void sch_config_get(ApiContext *ctx) {
     api_send_result_data(ctx, res);
 }
 
-/* POST /api/school/config  body: key, value, description(可选) */
+/* POST /api/school/config  body: 整个配置对象 {system_name:"", max_members_school:60, ...} */
 void sch_config_set(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
 
-    char key[101] = "", value[1001] = "", desc[256] = "";
-    api_get_json_str(ctx, "key", key, sizeof(key));
-    api_get_json_str(ctx, "value", value, sizeof(value));
-    api_get_json_str(ctx, "description", desc, sizeof(desc));
-    if (utils_is_empty(key) || utils_is_empty(value)) {
-        api_error(ctx, ERR_INPUT, "配置键和值均必填"); return;
+    /* 前端字段名 → 数据库 config_key / description 映射 */
+    struct {
+        const char *field;      /* 前端 JSON 字段名 */
+        const char *config_key; /* system_config.config_key */
+        const char *desc;       /* 写入 description 列 */
+    } map[] = {
+        {"system_name",          "system_name",               "系统名称"},
+        {"max_members_school",   "club_member_limit_school",  "校级社团人数上限"},
+        {"max_members_college",  "club_member_limit_college", "院级社团人数上限"},
+        {"max_members_per_club", "club_member_limit_global",  "社团成员上限（全局）"},
+        {NULL, NULL, NULL}
+    };
+
+    char buf[1001];
+    int any_change = 0;
+
+    for (int i = 0; map[i].field; i++) {
+        /* 尝试从 JSON body 读取该字段；未传或不存在则跳过 */
+        if (!api_get_json_str(ctx, map[i].field, buf, sizeof(buf))) continue;
+        if (!buf[0]) continue;  /* 跳过空值（如空的 system_name） */
+
+        char *ek = db_escape(map[i].config_key);
+        char *ev = db_escape(buf);
+        char *ed = db_escape(map[i].desc);
+        /* 存在即更新，不存在即插入（依赖 config_key 的 UNIQUE 约束） */
+        int ok = db_execute(
+            "INSERT INTO system_config (config_key, config_value, description) "
+            "VALUES ('%s','%s','%s') "
+            "ON DUPLICATE KEY UPDATE config_value=VALUES(config_value), "
+            "description=VALUES(description)",
+            ek, ev, ed);
+        free(ek); free(ev); free(ed);
+        if (ok >= 0) any_change = 1;
     }
 
-    char *ek = db_escape(key), *ev = db_escape(value), *ed = db_escape(desc);
-    /* 存在即更新，不存在即插入（依赖 config_key 的 UNIQUE 约束） */
-    int ok = db_execute(
-        "INSERT INTO system_config (config_key, config_value, description) "
-        "VALUES ('%s','%s','%s') "
-        "ON DUPLICATE KEY UPDATE config_value=VALUES(config_value), "
-        "description=VALUES(description)",
-        ek, ev, ed);
-    free(ek); free(ev); free(ed);
-    if (ok < 0) { api_error(ctx, ERR_DB, "保存失败"); return; }
-
-    db_execute("INSERT INTO logs (user_id, action, target_type, detail) "
-               "VALUES (%d, 'set_config', 'system_config', '修改系统配置')",
-               ctx->user->user_id);
+    if (any_change) {
+        db_execute("INSERT INTO logs (user_id, action, target_type, detail) "
+                   "VALUES (%d, 'set_config', 'system_config', '修改系统配置')",
+                   ctx->user->user_id);
+    }
     api_ok_msg(ctx, "配置已保存");
 }
 

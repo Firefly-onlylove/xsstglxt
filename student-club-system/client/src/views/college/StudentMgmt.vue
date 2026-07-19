@@ -13,6 +13,9 @@
     </FilterBar>
     <DataTable :data="tableData" :columns="columns" :total="total" :loading="loading"
       @page-change="onPage">
+      <template #role="{ row }">
+        <el-tag size="small" :type="roleType(row.role)">{{ roleLabel(row.role) }}</el-tag>
+      </template>
       <template #status="{ row }">
         <el-tag size="small" :type="(row.restrictions && row.restrictions !== '' && row.restrictions !== 'NULL') ? 'danger' : 'success'">
           {{ (row.restrictions && row.restrictions !== '' && row.restrictions !== 'NULL') ? '已限制' : '正常' }}
@@ -29,9 +32,8 @@
       <el-form ref="restrictForm" :model="restrictData" label-width="110px">
         <el-form-item label="限制类型" prop="restriction_type" :rules="[{required:true}]">
           <el-select v-model="restrictData.restriction_type" style="width:100%">
-            <el-option label="禁止加入社团" value="no_join" />
-            <el-option label="禁止参加活动" value="no_activity" />
-            <el-option label="禁止申请社团" value="no_apply" />
+            <el-option label="禁止加入社团" value="ban_join" />
+            <el-option label="禁止参加活动" value="ban_activity" />
           </el-select>
         </el-form-item>
         <el-form-item label="限制原因" prop="reason" :rules="[{required:true}]">
@@ -64,9 +66,15 @@ const restrictVisible = ref(false)
 const restrictForm = ref()
 const restrictData = ref({ restriction_type: '', reason: '' })
 
+const roleLabel = r => ({ general_student: '学生', club_member: '学生', club_admin: '社长/副社长', student: '学生' }[r] || r)
+const roleType  = r => ({ general_student: '', club_member: '', club_admin: 'success', student: '' }[r] || '')
+
 const columns = [
   { prop: 'student_no',  label: '学号',     width: 120 },
   { prop: 'real_name',   label: '姓名',     width: 100 },
+  { slot: 'role',        label: '角色',     width: 90 },
+  { prop: 'username',    label: '用户名',   width: 120 },
+  { prop: 'phone',       label: '手机号',   width: 120 },
   { prop: 'class_name',  label: '班级',     width: 160 },
   { prop: 'last_login',  label: '最后登录', width: 160 },
   { slot: 'status',      label: '状态',     width: 90 },

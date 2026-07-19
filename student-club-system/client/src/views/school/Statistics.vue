@@ -79,8 +79,20 @@ const typeStats      = ref([])
 const monthlyActivity = ref([])
 
 async function exportData() {
-  const res = await api.get('/api/school/stats/export')
-  if (res.code === 0) ElMessage.success('报表已导出')
+  try {
+    const response = await fetch('/api/school/stats/export', { credentials: 'include' })
+    if (!response.ok) { ElMessage.error('导出失败'); return }
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'school_stats.csv'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('报表已导出')
+  } catch (e) { ElMessage.error('导出失败') }
 }
 
 onMounted(async () => {

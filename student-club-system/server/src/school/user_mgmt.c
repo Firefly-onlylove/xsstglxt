@@ -48,7 +48,14 @@ void sch_user_list(ApiContext *ctx) {
     if (role[0]) {
         char *er = db_escape(role);
         char frag[128];
-        snprintf(frag, sizeof(frag), " AND u.role='%s'", er);
+        if (strcmp(role, "student") == 0) {
+            /* 前端传 "student"，但数据库角色字段实际为 general_student / club_member / club_admin */
+            snprintf(frag, sizeof(frag),
+                     " AND u.role IN ('%s','%s','%s')",
+                     ROLE_STUDENT, ROLE_MEMBER, ROLE_CLUB);
+        } else {
+            snprintf(frag, sizeof(frag), " AND u.role='%s'", er);
+        }
         strncat(where, frag, sizeof(where) - strlen(where) - 1);
         free(er);
     }
@@ -73,7 +80,7 @@ void sch_user_list(ApiContext *ctx) {
     int total = db_query_int("SELECT COUNT(*) FROM users u %s", where);
 
     MYSQL_RES *res = db_query(
-        "SELECT u.user_id, u.real_name, u.role, u.student_no, "
+        "SELECT u.user_id, u.username, u.real_name, u.role, u.student_no, "
         "COALESCE(c.college_name,'—') AS college_name, u.phone, u.status, u.last_login "
         "FROM users u LEFT JOIN colleges c ON u.college_id=c.college_id "
         "%s ORDER BY u.user_id LIMIT %d OFFSET %d",
@@ -290,6 +297,57 @@ void sch_restriction_list(ApiContext *ctx) {
             "WHERE r.is_active=1 ORDER BY r.created_at DESC LIMIT 100");
     }
     api_send_result_data(ctx, res);
+}
+
+/* POST /api/school/users/{id}/set-role  修改用户角色
+ * body: role(college_admin|club_admin), college_id(role=college_admin时), club_id(role=club_admin时) */
+void sch_user_set_role(ApiContext *ctx) {
+    if (!api_require_school_admin(ctx)) return;
+    int id = api_get_path_int(ctx, 2);
+    if (id <= 0) { api_error(ctx, ERR_INPUT, "用户ID非法"); return; }
+
+    char role[32] = "";
+    api_get_json_str(ctx, "role", role, sizeof(role));
+    int college_id = api_get_json_int(ctx, "college_id", 0);
+    int club_id = api_get_json_int(ctx, "club_id", 0);
+
+    if (!utils_str_equal(role, "college_admin") && !utils_str_equal(role, "club_admin")) {
+        api_error(ctx, ERR_INPUT, "角色类型非法（只支持 college_admin 或 club_admin）"); return;
+    }
+
+    if (utils_str_equal(role, "college_admin") && college_id <= 0) {
+        api_error(ctx, ERR_INPUT, "请指定所属学院"); return;
+    }
+    if (utils_str_equal(role, "club_admin") && club_id <= 0) {
+        api_error(ctx, ERR_INPUT, "请指定所属社团"); return;
+    }
+
+    /* 检查目标用户是否存在 */
+    int exist = db_query_int("SELECT COUNT(*) FROM users WHERE user_id=%d", id);
+    if (exist == 0) { api_error(ctx, ERR_NOT_FOUND, "用户不存在"); return; }
+
+    db_begin();
+    if (utils_str_equal(role, "college_admin")) {
+        db_execute("UPDATE users SET role='college_admin', college_id=%d WHERE user_id=%d",
+                   college_id, id);
+    } else {
+        /* club_admin: 先通过 club_id 查出该社团所属的 college_id */
+        int club_college_id = db_query_int("SELECT college_id FROM clubs WHERE club_id=%d", club_id);
+        if (club_college_id <= 0) {
+            db_rollback();
+            api_error(ctx, ERR_NOT_FOUND, "社团不存在"); return;
+        }
+        db_execute("UPDATE users SET role='club_admin', college_id=%d WHERE user_id=%d",
+                   club_college_id, id);
+        /* 同时插入社团管理员记录（如果不存在） */
+        db_execute("INSERT IGNORE INTO club_admins (user_id, club_id) VALUES (%d, %d)", id, club_id);
+    }
+    db_commit();
+
+    db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
+               "VALUES (%d, 'set_role', 'users', %d, '修改用户角色为%s')",
+               ctx->user->user_id, id, role);
+    api_ok_msg(ctx, "角色已更新");
 }
 
 #endif /* 备用代码结束 */
