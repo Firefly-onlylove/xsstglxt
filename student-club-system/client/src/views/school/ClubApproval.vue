@@ -3,7 +3,7 @@
     <div class="page-header">
       <span class="page-title">社团审批</span>
     </div>
-    <el-tabs v-model="activeTab" @tab-change="loadData">
+    <el-tabs v-model="activeTab" @tab-change="onTabChange">
       <el-tab-pane label="待审批" name="pending" />
       <el-tab-pane label="已审批记录" name="history" />
     </el-tabs>
@@ -22,8 +22,9 @@
       </template>
       <template #actions="{ row }">
         <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-        <template v-if="row.status === 'pending'">
-          <el-button link type="success" @click="approve(row, true)">通过</el-button>
+        <template v-if="activeTab === 'pending'">
+          <el-button link type="success" @click="quickApproveSchool(row)">通过(校级)</el-button>
+          <el-button link type="primary" @click="showCollegeFor(row)">通过(院级)</el-button>
           <el-button link type="danger" @click="openReject(row)">驳回</el-button>
         </template>
       </template>
@@ -32,19 +33,35 @@
     <!-- 详情弹窗 -->
     <el-dialog v-model="detailVisible" title="社团申请详情" width="560px">
       <el-descriptions :column="2" border v-if="current">
-        <el-descriptions-item label="社团名称">{{ current.name }}</el-descriptions-item>
-        <el-descriptions-item label="类型">{{ current.club_type }}</el-descriptions-item>
-        <el-descriptions-item label="申请人">{{ current.applicant_name }}</el-descriptions-item>
+        <el-descriptions-item label="社团名称">{{ current.club_name }}</el-descriptions-item>
+        <el-descriptions-item label="类型">{{ current.category }}</el-descriptions-item>
+        <el-descriptions-item label="申请人">{{ current.creator }}</el-descriptions-item>
         <el-descriptions-item label="所属学院">{{ current.college_name }}</el-descriptions-item>
-        <el-descriptions-item label="指导老师">{{ current.advisor }}</el-descriptions-item>
+        <el-descriptions-item label="级别">{{ current.level === 'school' ? '校级' : current.level === 'college' ? '院级' : '-' }}</el-descriptions-item>
         <el-descriptions-item label="申请时间">{{ current.created_at }}</el-descriptions-item>
         <el-descriptions-item label="简介" :span="2">{{ current.description }}</el-descriptions-item>
-        <el-descriptions-item label="创建理由" :span="2">{{ current.reason }}</el-descriptions-item>
+        <el-descriptions-item label="驳回理由" :span="2" v-if="current.status === 'rejected'">{{ current.reject_reason }}</el-descriptions-item>
       </el-descriptions>
       <template #footer v-if="current?.status === 'pending'">
         <el-button @click="detailVisible = false">关闭</el-button>
-        <el-button type="success" @click="approve(current, true)">通过</el-button>
+        <el-button type="success" @click="approveFromDetail">通过（校级）</el-button>
+        <el-button type="primary" @click="showCollegeApprove">通过（院级）</el-button>
         <el-button type="danger" @click="openReject(current)">驳回</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 院级审批：选择学院 -->
+    <el-dialog v-model="collegeVisible" title="院级社团 — 选择所属学院" width="420px">
+      <el-form :model="collegeForm">
+        <el-form-item label="所属学院">
+          <el-select v-model="collegeForm.college_id" placeholder="请选择学院" style="width:100%">
+            <el-option v-for="c in collegeList" :key="c.college_id" :label="c.college_name" :value="c.college_id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="collegeVisible = false">取消</el-button>
+        <el-button type="success" @click="approve(current, false)">确认通过</el-button>
       </template>
     </el-dialog>
 
@@ -85,26 +102,37 @@ const rejectForm = ref()
 const rejectData = ref({ reason: '' })
 
 const columns = [
-  { prop: 'name',           label: '社团名称' },
-  { prop: 'club_type',      label: '类型',   width: 80 },
-  { prop: 'applicant_name', label: '申请人', width: 100 },
-  { prop: 'college_name',   label: '学院',   width: 120 },
-  { prop: 'created_at',     label: '申请时间', width: 160 },
-  { slot: 'status',         label: '状态',   width: 90 },
-  { slot: 'actions',        label: '操作',   width: 180, fixed: 'right' }
+  { prop: 'club_name',   label: '社团名称' },
+  { prop: 'category',    label: '类型',   width: 80 },
+  { prop: 'creator',     label: '申请人', width: 100 },
+  { prop: 'college_name', label: '学院',   width: 120 },
+  { prop: 'created_at',  label: '申请时间', width: 160 },
+  { slot: 'status',      label: '状态',   width: 90 },
+  { slot: 'actions',     label: '操作',   width: 240, fixed: 'right' }
 ]
+
+const collegeList = ref([])
+const collegeVisible = ref(false)
+const collegeForm = ref({ college_id: null })
 
 const statusLabel = s => ({ pending: '待审批', approved: '已通过', rejected: '已驳回' }[s] || s)
 const statusType  = s => ({ pending: 'warning', approved: 'success', rejected: 'danger' }[s] || '')
 
+function onTabChange() { page.value = 1; loadData() }
+
 async function loadData() {
   loading.value = true
-  const res = await api.get('/api/school/clubs/pending', {
-    status: activeTab.value === 'pending' ? 'pending' : 'all',
+  const endpoint = activeTab.value === 'pending'
+    ? '/api/school/clubs/pending'
+    : '/api/school/clubs/history'
+  const res = await api.get(endpoint, {
     page: page.value, page_size: 10, ...filters.value
   })
   loading.value = false
-  if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.data.total || 0 }
+  if (res.code === 0) {
+    tableData.value = res.data.list || []
+    total.value = res.data.total || 0
+  }
 }
 
 function onReset() { filters.value = { keyword: '', club_type: '' }; loadData() }
@@ -118,10 +146,42 @@ function openReject(row) {
   rejectVisible.value = true
 }
 
-async function approve(row, pass) {
-  await ElMessageBox.confirm(`确认${pass ? '通过' : '驳回'}该社团申请？`, '提示', { type: 'warning' })
-  const res = await api.post('/api/school/clubs/' + row.club_id + '/approve', { approved: pass })
-  if (res.code === 0) { ElMessage.success('操作成功'); detailVisible.value = false; loadData() }
+async function quickApproveSchool(row) {
+  await ElMessageBox.confirm('确认通过该社团申请（校级）？', '提示', { type: 'warning' })
+  const res = await api.post('/api/school/clubs/' + row.club_id + '/approve', { level: 'school' })
+  if (res.code === 0) { ElMessage.success('已通过'); loadData() }
+  else ElMessage.error(res.msg)
+}
+
+function showCollegeFor(row) {
+  current.value = row
+  collegeForm.value.college_id = null
+  collegeVisible.value = true
+}
+
+async function approveFromDetail() {
+  detailVisible.value = false
+  await ElMessageBox.confirm('确认通过该社团申请（校级）？', '提示', { type: 'warning' })
+  const res = await api.post('/api/school/clubs/' + current.value.club_id + '/approve', { level: 'school' })
+  if (res.code === 0) { ElMessage.success('已通过'); loadData() }
+  else ElMessage.error(res.msg)
+}
+
+function showCollegeApprove() {
+  detailVisible.value = false
+  collegeForm.value.college_id = null
+  collegeVisible.value = true
+}
+
+async function approve(row, isSchool) {
+  const level = isSchool ? 'school' : 'college'
+  const label = isSchool ? '校级' : '院级'
+  await ElMessageBox.confirm(`确认通过该社团申请（${label}）？`, '提示', { type: 'warning' })
+  const body = isSchool
+    ? { level: 'school' }
+    : { level: 'college', college_id: collegeForm.value.college_id }
+  const res = await api.post('/api/school/clubs/' + current.value.club_id + '/approve', body)
+  if (res.code === 0) { ElMessage.success('已通过'); collegeVisible.value = false; detailVisible.value = false; loadData() }
   else ElMessage.error(res.msg)
 }
 
@@ -135,5 +195,9 @@ async function doReject() {
   else ElMessage.error(res.msg)
 }
 
-onMounted(loadData)
+onMounted(async () => {
+  const res = await api.get('/api/school/colleges')
+  if (res.code === 0) collegeList.value = res.data.list || res.data || []
+  loadData()
+})
 </script>

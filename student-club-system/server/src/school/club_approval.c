@@ -31,30 +31,98 @@
 /* GET /api/school/clubs/pending  待审批社团列表 */
 void sch_club_pending(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
-    MYSQL_RES *res = db_query(
+
+    char keyword[64] = "", club_type[32] = "";
+    api_get_param(ctx, "keyword", keyword, sizeof(keyword));
+    api_get_param(ctx, "club_type", club_type, sizeof(club_type));
+    int page = api_get_int(ctx, "page", 1);
+    int page_size = api_get_int(ctx, "page_size", 10);
+
+    /* 构建 WHERE 条件 */
+    char where[256] = "WHERE cl.status='pending'";
+    if (!utils_is_empty(keyword)) {
+        char *ek = db_escape(keyword);
+        char buf[128];
+        snprintf(buf, sizeof(buf), " AND cl.club_name LIKE '%%%s%%'", ek);
+        strcat(where, buf);
+        free(ek);
+    }
+    if (!utils_is_empty(club_type)) {
+        char *et = db_escape(club_type);
+        char buf[128];
+        snprintf(buf, sizeof(buf), " AND cl.category='%s'", et);
+        strcat(where, buf);
+        free(et);
+    }
+
+    /* 总数 */
+    char count_sql[512];
+    snprintf(count_sql, sizeof(count_sql),
+        "SELECT COUNT(*) FROM clubs cl %s", where);
+    int total = db_query_int("%s", count_sql);
+
+    /* 分页数据 */
+    int offset = (page - 1) * page_size;
+    if (offset < 0) offset = 0;
+
+    char sql[1024];
+    snprintf(sql, sizeof(sql),
         "SELECT cl.club_id, cl.club_name, cl.category, cl.level, "
         "COALESCE(col.college_name,'-') AS college_name, "
-        "u.real_name AS creator, cl.description, cl.created_at "
+        "u.real_name AS creator, cl.description, cl.created_at, cl.status "
         "FROM clubs cl "
         "LEFT JOIN colleges col ON cl.college_id=col.college_id "
         "LEFT JOIN users u ON cl.created_by=u.user_id "
-        "WHERE cl.status='pending' ORDER BY cl.created_at");
-    api_send_result_data(ctx, res);
+        "%s ORDER BY cl.created_at LIMIT %d OFFSET %d",
+        where, page_size, offset);
+
+    MYSQL_RES *res = db_query("%s", sql);
+    api_send_result_paged(ctx, res, page, page_size, total);
 }
 
 /* GET /api/school/clubs/history  已审批（通过/驳回）记录 */
 void sch_club_approved_history(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
-    MYSQL_RES *res = db_query(
+
+    char keyword[64] = "", club_type[32] = "";
+    api_get_param(ctx, "keyword", keyword, sizeof(keyword));
+    api_get_param(ctx, "club_type", club_type, sizeof(club_type));
+    int page = api_get_int(ctx, "page", 1);
+    int page_size = api_get_int(ctx, "page_size", 10);
+
+    char where[256] = "WHERE cl.status IN ('approved','rejected')";
+    if (!utils_is_empty(keyword)) {
+        char *ek = db_escape(keyword);
+        char buf[128];
+        snprintf(buf, sizeof(buf), " AND cl.club_name LIKE '%%%s%%'", ek);
+        strcat(where, buf);
+        free(ek);
+    }
+    if (!utils_is_empty(club_type)) {
+        char *et = db_escape(club_type);
+        char buf[128];
+        snprintf(buf, sizeof(buf), " AND cl.category='%s'", et);
+        strcat(where, buf);
+        free(et);
+    }
+
+    int total = db_query_int("SELECT COUNT(*) FROM clubs cl %s", where);
+    int offset = (page - 1) * page_size;
+    if (offset < 0) offset = 0;
+
+    char sql[1024];
+    snprintf(sql, sizeof(sql),
         "SELECT cl.club_id, cl.club_name, cl.category, cl.level, cl.status, "
         "cl.reject_reason, COALESCE(col.college_name,'-') AS college_name, "
         "u.real_name AS creator, cl.updated_at "
         "FROM clubs cl "
         "LEFT JOIN colleges col ON cl.college_id=col.college_id "
         "LEFT JOIN users u ON cl.created_by=u.user_id "
-        "WHERE cl.status IN ('approved','rejected') "
-        "ORDER BY cl.updated_at DESC LIMIT 100");
-    api_send_result_data(ctx, res);
+        "%s ORDER BY cl.updated_at DESC LIMIT %d OFFSET %d",
+        where, page_size, offset);
+
+    MYSQL_RES *res = db_query("%s", sql);
+    api_send_result_paged(ctx, res, page, page_size, total);
 }
 
 /* POST /api/school/clubs/{id}/approve
