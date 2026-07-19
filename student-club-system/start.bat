@@ -119,12 +119,19 @@ if "%MYSQL_SVC%"=="" (
     )
 )
 
+:try_mysql
 mysql -u %MYSQL_USER% -p%MYSQL_PASS% --batch --no-beep -e "SELECT 1" >nul 2>&1
-if errorlevel 1 (
-    echo     [ERROR] MySQL 连接失败 user=%MYSQL_USER% password=%MYSQL_PASS%
-    echo     请修改本文件顶部的 MYSQL_PASS 或检查 db_config.ini
-    pause & exit /b 1
-)
+if not errorlevel 1 goto :mysql_ok
+
+echo     [WARN] MySQL 连接失败 (user=%MYSQL_USER%)
+echo.
+echo     请输入本机 MySQL root 密码，或直接按 Enter 跳过：
+for /f "delims=" %%p in ('powershell -Command "try{$s=Read-Host -AsSecureString;if($s.Length -eq 0){''}else{[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))}}catch{''}"') do set "MYSQL_PASS=%%p"
+for /f "tokens=*" %%x in ("%MYSQL_PASS%") do set "MYSQL_PASS=%%x"
+if "%MYSQL_PASS%"=="" ( echo     已取消。 & pause & exit /b 1 )
+goto :try_mysql
+
+:mysql_ok
 echo     MySQL 连接成功
 
 if not exist "%PD%\db_config.ini" (
