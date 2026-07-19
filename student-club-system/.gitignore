@@ -21,3 +21,9 @@ storage/backups/*
 # OS
 Thumbs.db
 .DS_Store
+
+# 数据库配置（每台设备独立）
+db_config.ini
+
+# 前端构建产物（每台设备各自 npm run build）
+public/
