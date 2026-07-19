@@ -21,7 +21,9 @@ function normalizeData(data) {
 async function request(method, url, data) {
   const opts = {
     method,
-    headers: {},
+    headers: {
+      'ngrok-skip-browser-warning': '1'
+    },
     credentials: 'include'
   }
   if (data && method !== 'GET') {
@@ -51,6 +53,9 @@ export const api = {
 async function uploadRequest(url, formData) {
   const res = await fetch(BASE + url, {
     method: 'POST',
+    headers: {
+      'ngrok-skip-browser-warning': '1'
+    },
     credentials: 'include',
     body: formData
   })
