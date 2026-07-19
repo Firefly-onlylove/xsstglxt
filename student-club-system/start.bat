@@ -8,12 +8,14 @@ cd /d "%PD%" >nul 2>&1
 set "PORT=8000"
 set "NGROK=%USERPROFILE%\ngrok.exe"
 set "MYSQL_USER=root"
-set "MYSQL_PASS=123456789"
+set "MYSQL_PASS=200357"
 
 for %%d in (
     "C:\mingw4\mingw64"
     "C:\msys64\mingw64"
     "C:\mingw64"
+    "D:\mingw64"
+    "D:\msys64\mingw64"
 ) do if exist "%%~d\bin\gcc.exe" set "MINGW=%%~d" & goto :found_mingw
 echo [ERROR] MinGW not found. Please install MinGW-w64 or set MINGW path.
 pause & exit /b 1
