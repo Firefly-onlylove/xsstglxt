@@ -30,6 +30,10 @@
               <el-tag size="small" :type="club.level === 'school' ? '' : 'success'" style="margin-left:4px">{{ club.level === 'school' ? '校级' : '院级' }}</el-tag>
             </div>
             <div class="club-desc">{{ club.description || '暂无简介' }}</div>
+            <div style="margin-bottom:8px">
+              <el-button v-if="!club.join_status || club.join_status === 'not_joined'"
+                type="primary" size="small" @click.stop="joinClub(club)">申请加入</el-button>
+            </div>
             <div class="club-footer">
               <span><el-icon><UserFilled /></el-icon> {{ club.member_count }}</span>
               <span><el-icon><Calendar /></el-icon> {{ club.activity_count }}</span>
@@ -51,6 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/api'
+import { ElMessage } from 'element-plus'
 import FilterBar from '@/components/FilterBar.vue'
 
 const router = useRouter()
@@ -69,9 +74,19 @@ async function loadData() {
   loading.value = true
   const res = await api.get('/api/clubs', { page: page.value, page_size: 12, ...filters.value })
   loading.value = false
-  if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.data.total || 0 }
+  if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.total || res.data.total || 0 }
 }
 function onReset() { filters.value = { keyword: '', category: '', college_id: null }; loadData() }
+
+async function joinClub(club) {
+  const res = await api.post('/api/clubs/' + club.club_id + '/join')
+  if (res.code === 0) {
+    ElMessage.success('申请已提交')
+    club.join_status = 'pending'
+  } else {
+    ElMessage.error(res.msg)
+  }
+}
 
 onMounted(async () => {
   const res = await api.get('/api/colleges')

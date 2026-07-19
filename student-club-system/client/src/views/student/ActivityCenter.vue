@@ -63,7 +63,7 @@ async function loadData() {
   loading.value = true
   const res = await api.get('/api/activities', { page: page.value, page_size: 9, ...filters.value })
   loading.value = false
-  if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.data.total || 0 }
+  if (res.code === 0) { tableData.value = res.data.list || []; total.value = res.total || res.data.total || 0 }
 }
 function onReset() { filters.value = { status: '', club_id: null }; loadData() }
 
