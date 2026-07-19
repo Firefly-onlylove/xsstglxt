@@ -70,19 +70,6 @@ void sch_club_set_level(ApiContext *ctx);    /* POST /api/school/clubs/{id}/leve
 void sch_club_dissolve(ApiContext *ctx);     /* POST /api/school/clubs/{id}/dissolve */
 void sch_club_rename(ApiContext *ctx);       /* POST /api/school/clubs/{id}/rename */
 
-/* 学院管理 */
-void sch_college_list(ApiContext *ctx);      /* GET    /api/school/colleges */
-void sch_college_create(ApiContext *ctx);    /* POST   /api/school/colleges */
-void sch_college_update(ApiContext *ctx);    /* PUT    /api/school/colleges/{id} */
-void sch_college_toggle(ApiContext *ctx);    /* POST   /api/school/colleges/{id}/toggle */
-void sch_college_delete(ApiContext *ctx);    /* DELETE /api/school/colleges/{id} */
-
-/* 专业管理 */
-void sch_major_list(ApiContext *ctx);        /* GET    /api/school/majors?college_id= */
-void sch_major_create(ApiContext *ctx);      /* POST   /api/school/majors */
-void sch_major_update(ApiContext *ctx);      /* PUT    /api/school/majors/{id} */
-void sch_major_delete(ApiContext *ctx);      /* DELETE /api/school/majors/{id} */
-
 /* 用户管理 */
 void sch_user_list(ApiContext *ctx);         /* GET  /api/school/users */
 void sch_user_detail(ApiContext *ctx);       /* GET  /api/school/users/{id} */

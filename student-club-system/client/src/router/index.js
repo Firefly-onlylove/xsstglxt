@@ -13,7 +13,6 @@ const routes = [
       { path: 'dashboard',    component: () => import('@/views/school/Dashboard.vue') },
       { path: 'club-approval', component: () => import('@/views/school/ClubApproval.vue') },
       { path: 'club-mgmt',    component: () => import('@/views/school/ClubMgmt.vue') },
-      { path: 'college-mgmt', component: () => import('@/views/school/CollegeMgmt.vue') },
       { path: 'user-mgmt',    component: () => import('@/views/school/UserMgmt.vue') },
       { path: 'finance',      component: () => import('@/views/school/Finance.vue') },
       { path: 'statistics',   component: () => import('@/views/school/Statistics.vue') },

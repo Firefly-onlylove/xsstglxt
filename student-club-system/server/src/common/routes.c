@@ -58,19 +58,6 @@ static const Route ROUTES[] = {
     { "GET",  "/api/school/clubs/*",          sch_club_detail,    1 },
     { "GET",  "/api/school/clubs",            sch_club_list,      1 },
 
-    /* 学院管理 */
-    { "POST", "/api/school/colleges/*/toggle", sch_college_toggle, 1 },
-    { "DELETE", "/api/school/colleges/*",       sch_college_delete, 1 },
-    { "PUT",  "/api/school/colleges/*",        sch_college_update, 1 },
-    { "POST", "/api/school/colleges",          sch_college_create, 1 },
-    { "GET",  "/api/school/colleges",          sch_college_list,   1 },
-
-    /* 专业管理 */
-    { "PUT",    "/api/school/majors/*", sch_major_update, 1 },
-    { "DELETE", "/api/school/majors/*", sch_major_delete, 1 },
-    { "POST",   "/api/school/majors",   sch_major_create, 1 },
-    { "GET",    "/api/school/majors",   sch_major_list,   1 },
-
     /* 用户管理 */
     { "POST", "/api/school/users/college-admin",   sch_user_create_college_admin, 1 },
     { "POST", "/api/school/users/*/toggle",         sch_user_toggle,        1 },

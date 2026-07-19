@@ -72,7 +72,6 @@
         <div class="panel college-panel">
           <div class="panel-header">
             <span>各学院社团概况</span>
-            <el-button link type="primary" @click="router.push('/school/college-mgmt')">学院管理 →</el-button>
           </div>
           <el-table :data="collegeData" size="small" stripe style="width:100%" v-loading="collegeLoading"
             :max-height="tableMaxHeight">

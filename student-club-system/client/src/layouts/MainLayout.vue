@@ -59,7 +59,6 @@ const MENUS = {
     { path: '/school/dashboard',    label: '首页',     icon: 'HomeFilled' },
     { path: '/school/club-approval', label: '社团审批', icon: 'Checked' },
     { path: '/school/club-mgmt',    label: '社团管理', icon: 'OfficeBuilding' },
-    { path: '/school/college-mgmt', label: '学院管理', icon: 'School' },
     { path: '/school/user-mgmt',    label: '用户管理', icon: 'UserFilled' },
     { path: '/school/finance',      label: '财务监督', icon: 'Money' },
     { path: '/school/statistics',   label: '数据统计', icon: 'TrendCharts' },

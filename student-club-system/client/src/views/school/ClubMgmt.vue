@@ -170,7 +170,7 @@ async function dissolve(row) {
 }
 
 onMounted(async () => {
-  const res = await api.get('/api/school/colleges')
+  const res = await api.get('/api/colleges')
   if (res.code === 0) colleges.value = res.data.list || []
   loadData()
 })

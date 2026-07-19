@@ -208,7 +208,7 @@ async function doReject() {
 }
 
 onMounted(async () => {
-  const res = await api.get('/api/school/colleges')
+  const res = await api.get('/api/colleges')
   if (res.code === 0) collegeList.value = res.data.list || res.data || []
   loadData()
 })
