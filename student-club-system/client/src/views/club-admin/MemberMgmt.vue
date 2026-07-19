@@ -3,35 +3,26 @@
     <div class="page-header">
       <span class="page-title">{{ showMembers ? '成员管理' : '入社审批' }}</span>
     </div>
-    <el-tabs v-if="showMembers" v-model="activeTab" @tab-change="activeTab === 'members' ? loadMembers() : loadApplications()">
-      <el-tab-pane label="在籍成员" name="members" :lazy="true">
-        <DataTable :data="members" :columns="memberCols" :total="memberTotal" :loading="loading"
-          @page-change="e=>{memberPage=e.page;loadMembers()}">
-          <template #role="{ row }">
-            <el-tag size="small" :type="roleType(row.role)">{{ roleLabel(row.role) }}</el-tag>
-          </template>
-          <template #actions="{ row }">
-            <el-button link type="warning"
-              v-if="row.role === 'member'"
-              @click="promoteVP(row)">任命副社长</el-button>
-            <el-button link type="danger"
-              v-if="row.role !== 'president'"
-              @click="removeMember(row)">移出</el-button>
-          </template>
-        </DataTable>
-      </el-tab-pane>
-      <el-tab-pane label="入社审批" name="applications">
-        <DataTable :data="applications" :columns="appCols" :total="appTotal" :loading="loading"
-          @page-change="e=>{appPage=e.page;loadApplications()}">
-          <template #actions="{ row }">
-            <el-button link type="success" @click="approve(row, true)">通过</el-button>
-            <el-button link type="danger" @click="openReject(row)">拒绝</el-button>
-          </template>
-        </DataTable>
-      </el-tab-pane>
-    </el-tabs>
 
-    <!-- 纯入社审批模式 (no tabs) -->
+    <!-- 在籍成员 (from dashboard "社团成员" click) -->
+    <div v-if="showMembers" class="card">
+      <DataTable :data="members" :columns="memberCols" :total="memberTotal" :loading="loading"
+        @page-change="e=>{memberPage=e.page;loadMembers()}">
+        <template #role="{ row }">
+          <el-tag size="small" :type="roleType(row.role)">{{ roleLabel(row.role) }}</el-tag>
+        </template>
+        <template #actions="{ row }">
+          <el-button link type="warning"
+            v-if="row.role === 'member'"
+            @click="promoteVP(row)">任命副社长</el-button>
+          <el-button link type="danger"
+            v-if="row.role !== 'president'"
+            @click="removeMember(row)">移出</el-button>
+        </template>
+      </DataTable>
+    </div>
+
+    <!-- 入社审批 (from dashboard "待审批入社" click) -->
     <div v-else class="card">
       <DataTable :data="applications" :columns="appCols" :total="appTotal" :loading="loading"
         @page-change="e=>{appPage=e.page;loadApplications()}">
@@ -61,8 +52,6 @@ import DataTable from '@/components/DataTable.vue'
 import { useClub } from '@/composables/useClub'
 
 const route = useRoute()
-const router = useRouter()
-const activeTab = ref(route.query.tab || 'members')
 const showMembers = computed(() => !route.query.tab || route.query.tab !== 'applications')
 const loading = ref(false)
 const members = ref([]); const memberTotal = ref(0); const memberPage = ref(1)
@@ -128,7 +117,7 @@ async function doReject() {
     { reason: rejectReason.value })
   if (res.code === 0) { ElMessage.success('已拒绝'); rejectVisible.value = false; loadApplications() }
 }
-const loadAll = () => { if (activeTab.value === 'members') loadMembers(); else loadApplications() }
+const loadAll = () => showMembers.value ? loadMembers() : loadApplications()
 
 onMounted(() => {
   if (clubId.value) loadAll()
