@@ -7,6 +7,8 @@ cd /d "%PD%" >nul 2>&1
 
 set "PORT=8000"
 set "NGROK=%USERPROFILE%\ngrok.exe"
+set "MYSQL_USER=root"
+set "MYSQL_PASS=123456789"
 
 for %%d in (
     "C:\mingw4\mingw64"
@@ -85,6 +87,17 @@ echo   SCMS - Student Club Management System
 echo ============================================================
 echo.
 
+if exist "%PD%\db_config.ini" (
+    for /f "usebackq tokens=1* delims==" %%a in (`type "%PD%\db_config.ini"`) do (
+        if "%%a"=="password" set "MYSQL_PASS=%%b"
+        if "%%a"=="password " set "MYSQL_PASS=%%b"
+    )
+    for /f "usebackq tokens=1* delims==" %%a in (`type "%PD%\db_config.ini"`) do (
+        if "%%a"=="user" set "MYSQL_USER=%%b"
+        if "%%a"=="user " set "MYSQL_USER=%%b"
+    )
+)
+
 echo [*] Checking MySQL...
 set "MYSQL_SVC="
 for %%s in (MySQL80 MySQL84 MySQL MySQL8.0) do (
@@ -100,9 +113,11 @@ if "%MYSQL_SVC%"=="" (
         net start "%MYSQL_SVC%" >nul 2>&1
     )
 )
-mysql -u root -p123456789 -e "SELECT 1" >nul 2>&1
+
+mysql -u %MYSQL_USER% -p%MYSQL_PASS% --batch --no-beep -e "SELECT 1" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo     [ERROR] Database connection failed. Check password/config.
+    echo     [ERROR] MySQL connection failed (user=%MYSQL_USER% password=%MYSQL_PASS%)
+    echo     Edit MYSQL_PASS at top of this file or check db_config.ini
     pause & exit /b 1
 )
 echo     MySQL ready
@@ -113,8 +128,8 @@ if not exist "%PD%\db_config.ini" (
         echo [database]
         echo host = 127.0.0.1
         echo port = 3306
-        echo user = root
-        echo password = 123456789
+        echo user = %MYSQL_USER%
+        echo password = %MYSQL_PASS%
         echo database = scms_db
         echo pool_size = 5
         echo.
