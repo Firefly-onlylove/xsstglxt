@@ -51,6 +51,30 @@ if %errorlevel% neq 0 (
 )
 echo     MySQL ready
 
+:: 1.5 Ensure db_config.ini exists
+if not exist "%PD%\db_config.ini" (
+    echo     Creating db_config.ini...
+    (
+        echo [database]
+        echo host = 127.0.0.1
+        echo port = 3306
+        echo user = root
+        echo password = 123456789
+        echo database = scms_db
+        echo pool_size = 5
+        echo.
+        echo [server]
+        echo receipt_dir = storage/receipts
+        echo export_dir  = storage/exports
+        echo backup_dir  = storage/backups
+        echo.
+        echo [app]
+        echo auto_backup_hour = 3
+        echo session_timeout = 0
+    ) > "%PD%\db_config.ini"
+    echo     db_config.ini created
+)
+
 :: 2. Port check
 echo [*] Checking port %PORT%...
 netstat -ano | findstr ":%PORT%" | findstr "LISTENING" >nul 2>&1
@@ -63,6 +87,12 @@ if /i "%1"=="build"    call :build & goto :run
 if /i "%1"=="rebuild"  call :rebuild & goto :run
 if /i "%1"=="frontend" call :frontend & goto :run
 if /i "%1"=="all"      call :frontend & call :rebuild & goto :run
+
+:: 4. Ensure frontend (public/) exists - if not, auto-build
+if not exist "%PD%\public\index.html" (
+    echo [*] public/ not found, auto-building frontend...
+    call :frontend
+)
 
 goto :run
 
