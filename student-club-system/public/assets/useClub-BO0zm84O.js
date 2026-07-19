@@ -1,0 +1,1 @@
+import{a as n,r as c}from"./index-CO2stakw.js";const t=c(null),e=c(null);function o(){return e.value||(e.value=n.get("/api/my/clubs").then(l=>{if(l.code===0){const u=(l.data.list||[]).find(i=>i.role==="president"||i.role==="vice_president");u&&(t.value=u.club_id)}}).catch(()=>{})),{clubId:t,clubPromise:e}}export{o as u};

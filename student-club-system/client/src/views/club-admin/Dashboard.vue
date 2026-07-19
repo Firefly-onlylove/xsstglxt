@@ -29,7 +29,7 @@
           <b style="display:block;margin-bottom:12px">待处理事项</b>
           <el-row :gutter="12">
             <el-col :span="12">
-              <div class="todo-item" @click="router.push('/club-admin/member-mgmt')">
+              <div class="todo-item" @click="router.push('/club-admin/member-mgmt?tab=applications')">
                 <span class="todo-count">{{ pendingJoins }}</span>
                 <span class="todo-label">待审批入社</span>
               </div>
@@ -47,7 +47,7 @@
         <div class="card">
           <b style="display:block;margin-bottom:12px">最近活动</b>
           <div v-for="act in recentActivities" :key="act.activity_id" class="act-item"
-            @click="router.push('/club-admin/activity-mgmt?focus=' + act.activity_id)">
+            @click="router.push('/student/activity/' + act.activity_id)">
             <div style="font-size:14px;font-weight:500">{{ act.title }}</div>
             <div style="font-size:12px;color:#86909C;margin-top:2px">{{ act.start_time }} · {{ act.location }}</div>
             <el-tag size="small" :type="actStatusType(act.status)" style="margin-top:4px">{{ actStatusLabel(act.status) }}</el-tag>

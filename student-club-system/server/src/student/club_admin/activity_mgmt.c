@@ -83,6 +83,7 @@ void club_activity_create(ApiContext *ctx) {
     api_get_json_str(ctx, "signup_deadline", signup_deadline, sizeof(signup_deadline));
     api_get_json_str(ctx, "join_permission", join_perm,       sizeof(join_perm));
     int max_p = api_get_json_int(ctx, "max_participants", 0);
+    if (max_p < 1) max_p = 50;
     int enable_signin = api_get_json_int(ctx, "enable_signin", 0);
 
     if (utils_is_empty(title))      { api_error(ctx, ERR_VALIDATION, "请填写活动标题"); return; }

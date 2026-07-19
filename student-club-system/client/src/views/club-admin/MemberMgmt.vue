@@ -1,8 +1,10 @@
 <template>
   <div>
-    <div class="page-header"><span class="page-title">成员管理</span></div>
-    <el-tabs v-model="activeTab" @tab-change="activeTab === 'members' ? loadMembers() : loadApplications()">
-      <el-tab-pane label="在籍成员" name="members">
+    <div class="page-header">
+      <span class="page-title">{{ showMembers ? '成员管理' : '入社审批' }}</span>
+    </div>
+    <el-tabs v-if="showMembers" v-model="activeTab" @tab-change="activeTab === 'members' ? loadMembers() : loadApplications()">
+      <el-tab-pane label="在籍成员" name="members" :lazy="true">
         <DataTable :data="members" :columns="memberCols" :total="memberTotal" :loading="loading"
           @page-change="e=>{memberPage=e.page;loadMembers()}">
           <template #role="{ row }">
@@ -29,6 +31,17 @@
       </el-tab-pane>
     </el-tabs>
 
+    <!-- 纯入社审批模式 (no tabs) -->
+    <div v-else class="card">
+      <DataTable :data="applications" :columns="appCols" :total="appTotal" :loading="loading"
+        @page-change="e=>{appPage=e.page;loadApplications()}">
+        <template #actions="{ row }">
+          <el-button link type="success" @click="approve(row, true)">通过</el-button>
+          <el-button link type="danger" @click="openReject(row)">拒绝</el-button>
+        </template>
+      </DataTable>
+    </div>
+
     <el-dialog v-model="rejectVisible" title="拒绝理由" width="380px">
       <el-input v-model="rejectReason" type="textarea" :rows="3" placeholder="请输入拒绝理由" />
       <template #footer>
@@ -40,13 +53,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DataTable from '@/components/DataTable.vue'
 import { useClub } from '@/composables/useClub'
 
-const activeTab = ref('members')
+const route = useRoute()
+const router = useRouter()
+const activeTab = ref(route.query.tab || 'members')
+const showMembers = computed(() => !route.query.tab || route.query.tab !== 'applications')
 const loading = ref(false)
 const members = ref([]); const memberTotal = ref(0); const memberPage = ref(1)
 const applications = ref([]); const appTotal = ref(0); const appPage = ref(1)

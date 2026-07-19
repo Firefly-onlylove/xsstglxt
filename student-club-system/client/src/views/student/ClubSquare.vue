@@ -26,7 +26,8 @@
             <div class="club-name">{{ club.club_name }}</div>
             <div class="club-tags">
               <el-tag size="small" style="margin-right:4px">{{ club.category }}</el-tag>
-              <el-tag size="small" type="info">{{ club.college_name }}</el-tag>
+              <el-tag size="small" type="info">{{ club.college_name || '校级社团' }}</el-tag>
+              <el-tag size="small" :type="club.level === 'school' ? '' : 'success'" style="margin-left:4px">{{ club.level === 'school' ? '校级' : '院级' }}</el-tag>
             </div>
             <div class="club-desc">{{ club.description || '暂无简介' }}</div>
             <div class="club-footer">
