@@ -57,9 +57,6 @@ static MYSQL *create_connection(void) {
     MYSQL *conn = mysql_init(NULL);
     if (!conn) return NULL;
 
-    /* 断线自动重连 */
-    char reconnect = 1;
-    mysql_options(conn, MYSQL_OPT_RECONNECT, (const char *)&reconnect);
     /* 客户端字符集，防止中文乱码 */
     mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 
