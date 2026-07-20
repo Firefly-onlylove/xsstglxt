@@ -12,7 +12,7 @@
       </template>
       <template #actions="{ row }">
         <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-        <template v-if="row.status === 'pending'">
+        <template v-if="activeTab === 'pending'">
           <el-button link type="success" @click="approve(row, true)">通过</el-button>
           <el-button link type="danger" @click="openReject(row)">驳回</el-button>
         </template>
@@ -31,10 +31,7 @@
       <div v-if="current?.receipt_path" style="margin-top:12px">
         <img :src="'/receipts/'+current.receipt_path" style="max-width:100%;border-radius:4px" />
       </div>
-      <div style="margin-top:12px;color:#86909C;font-size:13px">
-        本院剩余可审批额度：¥{{ availableLimit }}
-      </div>
-      <template #footer v-if="current?.status==='pending'">
+      <template #footer v-if="activeTab === 'pending'">
         <el-button @click="detailVisible = false">关闭</el-button>
         <el-button type="success" @click="approve(current, true)">通过</el-button>
         <el-button type="danger" @click="openReject(current)">驳回</el-button>
@@ -95,8 +92,6 @@ async function loadData() {
 function onPage(e) { page.value = e.page; loadData() }
 async function openDetail(row) {
   current.value = row
-  const res = await api.get('/api/college/limits')
-  if (res.code === 0) availableLimit.value = res.data.available
   detailVisible.value = true
 }
 function openReject(row) { current.value = row; rejectReason.value = ''; detailVisible.value = false; rejectVisible.value = true }

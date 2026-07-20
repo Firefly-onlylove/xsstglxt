@@ -101,7 +101,8 @@ static const Route ROUTES[] = {
     { "POST",   "/api/college/classes",   col_class_create, 1 },
     { "GET",    "/api/college/classes",   col_class_list,   1 },
 
-    /* 本院社团监督 */
+    /* 本院社团监督 — 具体路径在前，通配在后 */
+    { "GET",  "/api/college/clubs/*/members", col_club_members, 1 },
     { "GET",  "/api/college/clubs/*", col_club_detail, 1 },
     { "GET",  "/api/college/clubs",   col_club_list,   1 },
 

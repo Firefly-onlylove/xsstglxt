@@ -67,6 +67,18 @@ void col_reimb_pending(ApiContext *ctx) {
             "WHERE c.college_id=%d AND c.level='college' "
             "AND r.college_reviewed='rejected' "
             "ORDER BY r.submitted_at DESC", cid);
+    } else if (strcmp(status, "history") == 0) {
+        /* 已审批记录：只显示流程已终结的（已通过或已驳回） */
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
+            "r.description, r.receipt_path, u.real_name AS applicant_name, "
+            "r.submitted_at, r.status, r.college_reviewed, r.review_comment "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.college_id=%d AND c.level='college' "
+            "AND r.status IN ('approved','rejected') "
+            "ORDER BY r.submitted_at DESC", cid);
     } else {
         /* 默认 pending：社团刚提交的，学院尚未处理 */
         res = db_query(
