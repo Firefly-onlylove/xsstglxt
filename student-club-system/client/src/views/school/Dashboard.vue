@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated, computed } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/api'
 
@@ -105,8 +105,6 @@ const statCards = ref([
   { label: '本月活动', value: null, desc: '场', footer: '进行中的活动', icon: 'Calendar', theme: 'orange' },
   { label: '待审批', value: null, desc: '项', footer: '社团创建/报销待处理', icon: 'WarningFilled', theme: 'red' }
 ])
-
-const pendingCount = computed(() => statCards.value[3].value || 0)
 
 const shortcuts = [
   { label: '社团审批', path: '/school/club-approval', icon: 'Checked', color: '#1677FF', bg: '#E6F4FF' },
@@ -144,7 +142,6 @@ async function loadDashboard() {
 onMounted(() => {
   calcHeight()
   window.addEventListener('resize', calcHeight)
-  loadDashboard()
 })
 
 /* 使用 onActivated 让页面被 keep-alive 缓存后每次进入都刷新 */

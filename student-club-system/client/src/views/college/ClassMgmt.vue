@@ -10,9 +10,6 @@
         <el-button type="primary" @click="openCreate">+ 新增班级</el-button>
       </template>
     </FilterBar>
-    <div style="text-align:right;margin-bottom:12px">
-      <el-button type="primary" @click="openCreate">+ 新增班级</el-button>
-    </div>
     <DataTable :data="tableData" :columns="columns" :total="total" :loading="loading"
       @page-change="onPage">
       <template #actions="{ row }">
@@ -27,7 +24,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FilterBar from '@/components/FilterBar.vue'
@@ -82,7 +79,6 @@ async function deleteClass(row) {
   if (res.code === 0) { ElMessage.success('已删除'); loadData() }
 }
 
-import { computed } from 'vue'
 onMounted(async () => {
   const me = await api.get('/api/me')
   const cid = me.code === 0 ? me.data.college_id : null

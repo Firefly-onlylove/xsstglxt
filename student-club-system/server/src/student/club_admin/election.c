@@ -90,16 +90,8 @@ void club_election_create(ApiContext *ctx) {
     if (rc < 0) { api_error(ctx, ERR_DB, "发起失败"); return; }
 
     /* 通知全体成员参与 */
-    MYSQL_RES *res = db_query(
-        "SELECT user_id FROM members WHERE club_id=%d "
-        "AND join_status='approved' AND left_at IS NULL", club_id);
-    if (res) {
-        MYSQL_ROW row;
-        while ((row = mysql_fetch_row(res)) != NULL)
-            if (row[0]) notification_send(atoi(row[0]), "社团换届开始",
-                "本社团已发起换届选举，欢迎报名参选或投票。", "election", club_id);
-        mysql_free_result(res);
-    }
+    notification_broadcast_club(club_id, "社团换届开始",
+        "本社团已发起换届选举，欢迎报名参选或投票。", "election", club_id);
     api_ok_msg(ctx, "换届已发起");
 }
 

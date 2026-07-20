@@ -222,24 +222,14 @@ void club_activity_cancel(ApiContext *ctx) {
     db_execute("UPDATE activities SET status='cancelled' WHERE activity_id=%d "
                "AND status IN ('published','ongoing')", aid);
 
-    /* 通知所有已报名且未取消的学生 */
-    MYSQL_RES *res = db_query(
-        "SELECT user_id FROM registrations "
-        "WHERE activity_id=%d AND status!='cancelled'", aid);
-    if (res) {
-        char title[128];
-        db_query_str("SELECT title FROM activities WHERE activity_id=%d",
-                     title, sizeof(title), aid);
-        char msg[400];
-        snprintf(msg, sizeof(msg), "活动「%s」已取消。%s%s", title,
-                 utils_is_empty(reason) ? "" : "原因：", reason);
-        MYSQL_ROW row;
-        while ((row = mysql_fetch_row(res)) != NULL) {
-            if (row[0]) notification_send(atoi(row[0]), "活动取消通知",
-                                          msg, "activity_cancel", aid);
-        }
-        mysql_free_result(res);
-    }
+    /* 批量通知所有已报名且未取消的学生 */
+    char title[128];
+    db_query_str("SELECT title FROM activities WHERE activity_id=%d",
+                 title, sizeof(title), aid);
+    char msg[400];
+    snprintf(msg, sizeof(msg), "活动「%s」已取消。%s%s", title,
+             utils_is_empty(reason) ? "" : "原因：", reason);
+    notification_notify_registrants(aid, "活动取消通知", msg, "activity_cancel");
     api_ok_msg(ctx, "活动已取消，已通知报名者");
 }
 

@@ -33,25 +33,10 @@ void club_announce_post(ApiContext *ctx) {
     if (utils_is_empty(title))   { api_error(ctx, ERR_VALIDATION, "请填写公告标题"); return; }
     if (utils_is_empty(content)) { api_error(ctx, ERR_VALIDATION, "请填写公告内容"); return; }
 
-    /* 群发给本社全体在籍成员 */
-    MYSQL_RES *res = db_query(
-        "SELECT user_id FROM members WHERE club_id=%d "
-        "AND join_status='approved' AND left_at IS NULL", club_id);
-    int sent = 0;
-    if (res) {
-        MYSQL_ROW row;
-        while ((row = mysql_fetch_row(res)) != NULL) {
-            if (row[0]) {
-                notification_send(atoi(row[0]), title, content, "club_announce", club_id);
-                sent++;
-            }
-        }
-        mysql_free_result(res);
-    }
+    /* 群发给本社全体在籍成员（使用批量广播，单条INSERT SELECT） */
+    notification_broadcast_club(club_id, title, content, "club_announce", club_id);
 
-    char msg[64];
-    snprintf(msg, sizeof(msg), "公告已发送给 %d 名成员", sent);
-    api_ok_msg(ctx, msg);
+    api_ok_msg(ctx, "公告已发布");
 }
 
 #endif /* 备用文件：改 #if 0 为 #if 1 启用 */

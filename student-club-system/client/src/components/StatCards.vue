@@ -18,11 +18,11 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   cards: { type: Array, default: () => [] },
   cols:  { type: Number, default: 4 }
 })
-const span = 24 / (defineProps().cols || 4)
+const span = 24 / (props.cols || 4)
 </script>
 
 <script>
