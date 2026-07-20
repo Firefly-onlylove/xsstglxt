@@ -7,8 +7,8 @@
         <p class="subtitle">全校社团运营数据概览</p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" @click="router.push('/school/club-approval')" v-if="pendingCount > 0">
-          待审批 ({{ pendingCount }})
+        <el-button type="primary" @click="router.push('/school/club-approval')">
+          社团审批 ({{ pendingCount }})
         </el-button>
       </div>
     </div>

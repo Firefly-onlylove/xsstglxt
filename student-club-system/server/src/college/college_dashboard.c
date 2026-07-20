@@ -35,12 +35,10 @@ void col_dashboard(ApiContext *ctx) {
         "SELECT COUNT(*) FROM clubs "
         "WHERE college_id=%d AND status='approved'", cid);
 
-    /* 本院社团成员总数（在籍） */
-    int member_cnt = db_query_int(
-        "SELECT COUNT(*) FROM members m "
-        "JOIN clubs c ON m.club_id=c.club_id "
-        "WHERE c.college_id=%d AND m.left_at IS NULL "
-        "AND m.join_status='approved'", cid);
+    /* 本院学生总数（按学院维度统计 users 表中的在册学生） */
+    int student_cnt = db_query_int(
+        "SELECT COUNT(*) FROM users "
+        "WHERE college_id=%d AND is_active=1", cid);
 
     /* 本院社团活动总场次 */
     int act_cnt = db_query_int(
@@ -49,16 +47,16 @@ void col_dashboard(ApiContext *ctx) {
         "WHERE c.college_id=%d AND a.status IN "
         "('published','ongoing','completed')", cid);
 
-    /* 待审批报销数（本院院级社团） */
+    /* 待审批报销数（本院院级社团，待学院初审：status=pending AND college_reviewed=pending） */
     int reimb_cnt = db_query_int(
         "SELECT COUNT(*) FROM reimbursement r "
         "JOIN clubs c ON r.club_id=c.club_id "
-        "WHERE c.college_id=%d AND r.status='pending'", cid);
+        "WHERE c.college_id=%d AND r.status='pending' AND r.college_reviewed='pending'", cid);
 
     JsonBuilder jb;
     json_init(&jb);
     json_add_int(&jb, "club_count", club_cnt);
-    json_add_int(&jb, "student_count", member_cnt);
+    json_add_int(&jb, "student_count", student_cnt);
     json_add_int(&jb, "activity_count", act_cnt);
     json_add_int(&jb, "pending_reimb", reimb_cnt);
     api_ok_data(ctx, json_finish(&jb));

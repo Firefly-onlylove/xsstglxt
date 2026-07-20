@@ -169,7 +169,7 @@ void stu_my_clubs(ApiContext *ctx) {
         "COALESCE(col.college_name,'') AS college_name "
         "FROM members m JOIN clubs c ON m.club_id=c.club_id "
         "LEFT JOIN colleges col ON c.college_id=col.college_id "
-        "WHERE m.user_id=%d AND m.left_at IS NULL "
+        "WHERE m.user_id=%d AND m.join_status='approved' AND m.left_at IS NULL "
         "ORDER BY m.joined_at DESC", uid);
 
     api_send_result(ctx, res);

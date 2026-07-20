@@ -29,16 +29,16 @@
                 <el-form-item label="姓名"><el-input v-model="form.real_name" :disabled="!editing" /></el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="学号"><el-input v-model="form.student_id" :disabled="!editing" /></el-form-item>
+                <el-form-item label="学号"><el-input :model-value="form.student_no || '未填写'" disabled /></el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="手机号"><el-input v-model="form.phone" :disabled="!editing" /></el-form-item>
+                <el-form-item label="手机号"><el-input :model-value="form.phone || '未填写'" :disabled="!editing" /></el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="邮箱"><el-input v-model="form.email" :disabled="!editing" /></el-form-item>
+                <el-form-item label="邮箱"><el-input :model-value="form.email || '未填写'" :disabled="!editing" /></el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="学院"><el-input v-model="form.college_name" disabled /></el-form-item>
+                <el-form-item label="学院"><el-input :model-value="form.college_name || '未填写'" disabled /></el-form-item>
               </el-col>
             </el-row>
             <el-form-item v-if="editing">
@@ -78,7 +78,7 @@ import { ElMessage } from 'element-plus'
 const user = ref(null)
 const editing = ref(false)
 const saving = ref(false)
-const form = ref({ username: '', real_name: '', student_id: '', phone: '', email: '', college_name: '' })
+const form = ref({ username: '', real_name: '', student_no: '', phone: '', email: '', college_name: '' })
 const pwdFormRef = ref()
 const pwdForm = ref({ old_password: '', new_password: '', confirm_password: '' })
 const pwdRules = {
@@ -91,17 +91,17 @@ const roleLabel = r => ({ school_admin:'学校管理员', college_admin:'学院�
 
 async function saveProfile() {
   saving.value = true
-  const res = await api.put('/api/my/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email, student_id: form.value.student_id })
+  const res = await api.put('/api/my/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email, student_no: form.value.student_no })
   saving.value = false
   if (res.code === 0) { ElMessage.success('保存成功'); editing.value = false }
-  else ElMessage.error(res.message)
+  else ElMessage.error(res.msg || '保存失败')
 }
 
 async function changePwd() {
   await pwdFormRef.value.validate()
   const res = await api.post('/api/my/change-password', { old_password: pwdForm.value.old_password, new_password: pwdForm.value.new_password })
   if (res.code === 0) { ElMessage.success('密码已修改'); pwdForm.value = { old_password:'', new_password:'', confirm_password:'' } }
-  else ElMessage.error(res.message)
+  else ElMessage.error(res.msg || '修改失败')
 }
 
 onMounted(async () => {
