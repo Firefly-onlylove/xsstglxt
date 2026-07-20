@@ -27,35 +27,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* 校验社长/副社长权限 */
-static int club_require_manager(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-    int is_mgr = db_query_int(
-        "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
-        "AND join_status='approved' AND left_at IS NULL "
-        "AND role IN ('president','vice_president')", club_id, ctx->user->user_id);
-    if (is_mgr == 0) { api_error(ctx, ERR_PERMISSION, "仅社长/副社长可操作"); return 0; }
-    return 1;
-}
-
-/* 校验仅社长（任命角色用） */
-static int club_require_president(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-    int is_pres = db_query_int(
-        "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
-        "AND role='president' AND join_status='approved' AND left_at IS NULL",
-        club_id, ctx->user->user_id);
-    if (is_pres == 0) { api_error(ctx, ERR_PERMISSION, "仅社长可执行此操作"); return 0; }
-    return 1;
-}
+/* club_require_manager / club_require_president 已提取到 api.c 公共函数 */
 
 /* GET /api/club/{id}/members — 在籍成员列表 */
 void club_member_list(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     MYSQL_RES *res = db_query(
         "SELECT m.member_id, m.user_id, u.real_name, u.student_no, u.phone, "
@@ -74,7 +52,7 @@ void club_member_list(ApiContext *ctx) {
 void club_join_pending(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     MYSQL_RES *res = db_query(
         "SELECT m.member_id, m.user_id, u.real_name, u.student_no, u.phone, "
@@ -93,7 +71,7 @@ void club_join_approve(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int mid     = api_get_path_int(ctx, 3);   /* .../join-requests/{mid}/approve */
     if (club_id <= 0 || mid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     /* 取申请人 user_id 校验归属 */
     int applicant = db_query_int(
@@ -116,7 +94,7 @@ void club_join_reject(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int mid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || mid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     int applicant = db_query_int(
         "SELECT user_id FROM members WHERE member_id=%d AND club_id=%d "
@@ -142,7 +120,7 @@ void club_member_remove(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int mid     = api_get_path_int(ctx, 3);   /* .../members/{mid}/remove */
     if (club_id <= 0 || mid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     /* 取目标成员角色与 user_id */
     MYSQL_RES *res = db_query(
@@ -187,7 +165,7 @@ void club_member_appoint(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int mid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || mid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_president(ctx, club_id)) return;
+    if (!api_require_club_president(ctx, club_id)) return;
 
     char role[16] = "";
     api_get_json_str(ctx, "role", role, sizeof(role));

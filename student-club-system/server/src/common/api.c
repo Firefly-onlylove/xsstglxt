@@ -782,6 +782,27 @@ int api_require_club_admin(ApiContext *ctx, int club_id) {
     return 0;
 }
 
+/**
+ * api_require_club_president — 检查当前用户是否为指定社团的社长
+ * @ctx:     请求上下文
+ * @club_id: 社团 ID
+ * 返回值：1 = 是社长或学校管理员，0 = 否
+ */
+int api_require_club_president(ApiContext *ctx, int club_id) {
+    if (!api_require_login(ctx)) return 0;
+    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
+
+    int cnt = db_query_int(
+        "SELECT COUNT(*) FROM members "
+        "WHERE club_id=%d AND user_id=%d AND left_at IS NULL "
+        "AND join_status='approved' AND role='president'",
+        club_id, ctx->user->user_id);
+    if (cnt > 0) return 1;
+
+    api_error(ctx, ERR_PERMISSION, "仅社长可执行此操作");
+    return 0;
+}
+
 /* ═══════════════════════ 六、文件上传 ═══════════════════════ */
 
 /**

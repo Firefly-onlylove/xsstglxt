@@ -21,22 +21,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static int club_require_manager(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-    int is_mgr = db_query_int(
-        "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
-        "AND join_status='approved' AND left_at IS NULL "
-        "AND role IN ('president','vice_president')", club_id, ctx->user->user_id);
-    if (is_mgr == 0) { api_error(ctx, ERR_PERMISSION, "仅社长/副社长可操作"); return 0; }
-    return 1;
-}
-
 /* POST /api/club/{id}/announcements — 发布公告  body: title, content */
 void club_announce_post(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     char title[128] = "", content[2000] = "";
     api_get_json_str(ctx, "title",   title,   sizeof(title));

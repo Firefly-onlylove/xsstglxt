@@ -29,7 +29,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int is_club_member(int uid, int club_id) {
+/* 判断当前用户是否本社在籍成员 */
+static int is_valid_member(int uid, int club_id) {
     return db_query_int(
         "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
         "AND join_status='approved' AND left_at IS NULL", club_id, uid) > 0;
@@ -43,7 +44,7 @@ void club_election_vote(ApiContext *ctx) {
     if (!api_require_login(ctx)) return;
     int uid = ctx->user->user_id;
 
-    if (!is_club_member(uid, club_id)) {
+    if (!is_valid_member(uid, club_id)) {
         api_error(ctx, ERR_PERMISSION, "仅本社成员可投票"); return;
     }
 

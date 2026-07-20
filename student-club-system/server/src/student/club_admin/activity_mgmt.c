@@ -33,17 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int club_require_manager(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-    int is_mgr = db_query_int(
-        "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
-        "AND join_status='approved' AND left_at IS NULL "
-        "AND role IN ('president','vice_president')", club_id, ctx->user->user_id);
-    if (is_mgr == 0) { api_error(ctx, ERR_PERMISSION, "仅社长/副社长可操作"); return 0; }
-    return 1;
-}
-
 /* 校验活动属于该社团，返回 1/0 */
 static int activity_belongs(int aid, int club_id) {
     return db_query_int("SELECT COUNT(*) FROM activities "
@@ -54,7 +43,7 @@ static int activity_belongs(int aid, int club_id) {
 void club_activity_list(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     MYSQL_RES *res = db_query(
         "SELECT activity_id, title, location, start_time, end_time, "
@@ -70,7 +59,7 @@ void club_activity_list(ApiContext *ctx) {
 void club_activity_create(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     char title[128] = "", description[2000] = "", location[128] = "";
     char start_time[32] = "", end_time[32] = "", signup_deadline[32] = "";
@@ -116,7 +105,7 @@ void club_activity_update(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     char status[16];
@@ -169,7 +158,7 @@ void club_activity_publish(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     /* 检查是否启用签到 */
@@ -198,7 +187,7 @@ void club_activity_start(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     db_execute("UPDATE activities SET status='ongoing' "
@@ -211,7 +200,7 @@ void club_activity_finish(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     db_execute("UPDATE activities SET status='completed' "
@@ -224,7 +213,7 @@ void club_activity_cancel(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     char reason[256] = "";
@@ -259,7 +248,7 @@ void club_activity_summary(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     char summary[4000] = "";
@@ -275,7 +264,7 @@ void club_activity_delete(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     char status[16];
@@ -294,7 +283,7 @@ void club_signin_list(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     MYSQL_RES *res = db_query(
@@ -310,7 +299,7 @@ void club_signin_manual(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int aid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || aid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
     if (!activity_belongs(aid, club_id)) { api_error(ctx, ERR_NOT_FOUND, "活动不存在"); return; }
 
     int target = api_get_json_int(ctx, "user_id", 0);

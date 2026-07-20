@@ -237,6 +237,11 @@ int api_require_college_admin(ApiContext *ctx);
  *  @return 是该社团管理员返回 1，否则返回 0（已发送错误响应） */
 int api_require_club_admin(ApiContext *ctx, int club_id);
 
+/** 要求当前用户为指定社团的社长（仅社长，不含副社长）
+ *  @param club_id 社团 ID
+ *  @return 是社长返回 1，否则返回 0（已发送错误响应） */
+int api_require_club_president(ApiContext *ctx, int club_id);
+
 /* ═══════════════════════ 六、文件上传（发票图片） ═══════════════════════ */
 
 /** 保存 multipart 上传的文件到 receipts/ 目录

@@ -31,30 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int club_require_manager(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-    int is_mgr = db_query_int(
-        "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
-        "AND join_status='approved' AND left_at IS NULL "
-        "AND role IN ('president','vice_president')", club_id, ctx->user->user_id);
-    if (is_mgr == 0) { api_error(ctx, ERR_PERMISSION, "仅社长/副社长可操作"); return 0; }
-    return 1;
-}
-
-static int club_require_president(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-    int is_pres = db_query_int(
-        "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
-        "AND role='president' AND join_status='approved' AND left_at IS NULL",
-        club_id, ctx->user->user_id);
-    if (is_pres == 0) { api_error(ctx, ERR_PERMISSION, "仅社长可发起换届"); return 0; }
-    return 1;
-}
-
-/* 判断当前用户是否本社在籍成员 */
-static int is_club_member(int uid, int club_id) {
+/* 校验当前用户是否该社团在籍成员（不含学校管理员特权，纯身份判断） */
+static int is_valid_member(int uid, int club_id) {
     return db_query_int(
         "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
         "AND join_status='approved' AND left_at IS NULL", club_id, uid) > 0;
@@ -65,7 +43,7 @@ void club_election_list(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
     if (!api_require_login(ctx)) return;
-    if (!is_club_member(ctx->user->user_id, club_id) &&
+    if (!is_valid_member(ctx->user->user_id, club_id) &&
         !utils_str_equal(ctx->user->role, "school_admin")) {
         api_error(ctx, ERR_PERMISSION, "仅本社成员可查看"); return;
     }
@@ -82,7 +60,7 @@ void club_election_list(ApiContext *ctx) {
 void club_election_create(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_president(ctx, club_id)) return;
+    if (!api_require_club_president(ctx, club_id)) return;
 
     /* 不允许存在进行中的换届 */
     int ongoing = db_query_int(
@@ -185,7 +163,7 @@ void club_election_signup(ApiContext *ctx) {
     if (!api_require_login(ctx)) return;
     int uid = ctx->user->user_id;
 
-    if (!is_club_member(uid, club_id)) {
+    if (!is_valid_member(uid, club_id)) {
         api_error(ctx, ERR_PERMISSION, "仅本社成员可参选"); return;
     }
 

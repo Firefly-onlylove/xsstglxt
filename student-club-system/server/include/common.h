@@ -53,6 +53,11 @@
 #define ROLE_MEMBER   "club_member"        // 社团成员
 #define ROLE_STUDENT  "general_student"    // 普通学生
 
+/* ============ 列表查询默认上限 ============ */
+#define LIST_LIMIT_DEFAULT  50     // 列表默认返回条数
+#define LIST_LIMIT_MAX      1000   // 列表最大返回条数
+#define SENTINEL_DATE       "1970-01-01 00:00:00"  // 空日期占位符
+
 /* ============ 通用宏 ============ */
 #define SAFE_STR(s)   ((s) ? (s) : "")           // 安全取字符串，NULL 时返回空串
 #define ARRAY_LEN(a)  (sizeof(a) / sizeof((a)[0])) // 计算数组元素个数

@@ -9,7 +9,7 @@
  *
  * 启用方法：把下面的 #if 0 改成 #if 1。
  *
- * 权限：所有 /api/club/{id}/* 接口都要先 club_require_manager(ctx, club_id)
+ * 权限：所有 /api/club/{id}/* 接口都要先 api_require_club_admin(ctx, club_id)
  *      校验当前用户是该社团的 president 或 vice_president。
  */
 #if 1
@@ -24,31 +24,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* 内部辅助：校验当前登录用户是否为该社团的社长/副社长。
- * 通过返回 1；否则写好错误响应并返回 0。 */
-static int club_require_manager(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    int uid = ctx->user->user_id;
-
-    /* 学校管理员拥有全部社团管理权限 */
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-
-    int is_mgr = db_query_int(
-        "SELECT COUNT(*) FROM members "
-        "WHERE club_id=%d AND user_id=%d AND join_status='approved' AND left_at IS NULL "
-        "AND role IN ('president','vice_president')", club_id, uid);
-    if (is_mgr == 0) {
-        api_error(ctx, ERR_PERMISSION, "仅社长/副社长可操作");
-        return 0;
-    }
-    return 1;
-}
-
 /* GET /api/club/{id}/dashboard — 概览：成员数、活动数、待审入社、经费余额 */
 void club_dashboard(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);   /* /api/club/{id}/dashboard */
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     int member_cnt = db_query_int(
         "SELECT COUNT(*) FROM members WHERE club_id=%d "
@@ -117,7 +97,7 @@ void club_dashboard(ApiContext *ctx) {
 void club_profile_get(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     MYSQL_RES *res = db_query(
         "SELECT c.club_id, c.club_name, c.description, c.category, c.level, "
@@ -141,7 +121,7 @@ void club_profile_get(ApiContext *ctx) {
 void club_profile_update(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     char description[1000] = "", advisor[64] = "", join_perm[16] = "";
     api_get_json_str(ctx, "description",     description, sizeof(description));

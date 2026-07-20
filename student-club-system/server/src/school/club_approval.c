@@ -44,14 +44,14 @@ void sch_club_pending(ApiContext *ctx) {
         char *ek = db_escape(keyword);
         char buf[128];
         snprintf(buf, sizeof(buf), " AND cl.club_name LIKE '%%%s%%'", ek);
-        strcat(where, buf);
+        snprintf(where + strlen(where), sizeof(where) - strlen(where), "%s", buf);
         free(ek);
     }
     if (!utils_is_empty(club_type)) {
         char *et = db_escape(club_type);
         char buf[128];
         snprintf(buf, sizeof(buf), " AND cl.category='%s'", et);
-        strcat(where, buf);
+        snprintf(where + strlen(where), sizeof(where) - strlen(where), "%s", buf);
         free(et);
     }
 
@@ -96,14 +96,14 @@ void sch_club_approved_history(ApiContext *ctx) {
         char *ek = db_escape(keyword);
         char buf[128];
         snprintf(buf, sizeof(buf), " AND cl.club_name LIKE '%%%s%%'", ek);
-        strcat(where, buf);
+        snprintf(where + strlen(where), sizeof(where) - strlen(where), "%s", buf);
         free(ek);
     }
     if (!utils_is_empty(club_type)) {
         char *et = db_escape(club_type);
         char buf[128];
         snprintf(buf, sizeof(buf), " AND cl.category='%s'", et);
-        strcat(where, buf);
+        snprintf(where + strlen(where), sizeof(where) - strlen(where), "%s", buf);
         free(et);
     }
 

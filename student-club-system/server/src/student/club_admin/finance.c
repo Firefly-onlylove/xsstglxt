@@ -26,22 +26,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int club_require_manager(ApiContext *ctx, int club_id) {
-    if (!api_require_login(ctx)) return 0;
-    if (utils_str_equal(ctx->user->role, "school_admin")) return 1;
-    int is_mgr = db_query_int(
-        "SELECT COUNT(*) FROM members WHERE club_id=%d AND user_id=%d "
-        "AND join_status='approved' AND left_at IS NULL "
-        "AND role IN ('president','vice_president')", club_id, ctx->user->user_id);
-    if (is_mgr == 0) { api_error(ctx, ERR_PERMISSION, "仅社长/副社长可操作"); return 0; }
-    return 1;
-}
-
 /* GET /api/club/{id}/finance — 财务台账 + 余额汇总 */
 void club_finance_list(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     /* 读取筛选参数 */
     char filter_type[32] = "";
@@ -88,7 +77,7 @@ void club_finance_list(ApiContext *ctx) {
 void club_finance_create(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     char type[32] = "", description[256] = "";
     double amount = api_get_json_double(ctx, "amount", 0);
@@ -118,7 +107,7 @@ void club_finance_delete(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int fid = api_get_path_int(ctx, 3);
     if (club_id <= 0 || fid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     int rc = db_execute(
         "DELETE FROM finance WHERE finance_id=%d AND club_id=%d", fid, club_id);
@@ -147,7 +136,7 @@ void club_reimb_upload(ApiContext *ctx) {
 void club_reimb_list(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     MYSQL_RES *res = db_query(
         "SELECT reimbursement_id, amount, description, receipt_path, status, "
@@ -162,7 +151,7 @@ void club_reimb_list(ApiContext *ctx) {
 void club_reimb_create(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     if (club_id <= 0) { api_error(ctx, ERR_INPUT, "社团ID非法"); return; }
-    if (!club_require_manager(ctx, club_id)) return;
+    if (!api_require_club_admin(ctx, club_id)) return;
 
     double amount = api_get_json_double(ctx, "amount", 0);
     char description[512] = "";
