@@ -73,16 +73,14 @@ const MENUS = {
     { path: '/student/club-square',     label: '社团广场', icon: 'Compass' },
     { path: '/student/activity-center', label: '活动中心', icon: 'Calendar' },
     { path: '/student/my-clubs',        label: '我的社团', icon: 'UserFilled' },
-    { path: '/student/messages',        label: '消息',     icon: 'Message' },
-    { path: '/student/profile',         label: '个人中心', icon: 'User' }
+    { path: '/student/messages',        label: '消息',     icon: 'Message' }
   ],
   club_admin: [
     { path: '/student/club-square',     label: '社团广场', icon: 'Compass' },
     { path: '/student/activity-center', label: '活动中心', icon: 'Calendar' },
     { path: '/student/my-clubs',        label: '我的社团', icon: 'UserFilled' },
     { path: '/club-admin/dashboard',    label: '管理后台', icon: 'Setting' },
-    { path: '/student/messages',        label: '消息',     icon: 'Message' },
-    { path: '/student/profile',         label: '个人中心', icon: 'User' }
+    { path: '/student/messages',        label: '消息',     icon: 'Message' }
   ]
 }
 
