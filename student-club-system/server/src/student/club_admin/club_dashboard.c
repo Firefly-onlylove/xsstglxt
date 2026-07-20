@@ -56,7 +56,8 @@ void club_dashboard(ApiContext *ctx) {
     int pending_cnt = db_query_int(
         "SELECT COUNT(*) FROM members WHERE club_id=%d AND join_status='pending'", club_id);
     int reimb_pending = db_query_int(
-        "SELECT COUNT(*) FROM reimbursement WHERE club_id=%d AND status='pending'", club_id);
+        "SELECT COUNT(*) FROM reimbursement WHERE club_id=%d "
+        "AND status='pending' AND college_reviewed='pending'", club_id);
     int activity_cnt = db_query_int(
         "SELECT COUNT(*) FROM activities WHERE club_id=%d "
         "AND status IN ('published','ongoing')", club_id);

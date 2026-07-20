@@ -64,9 +64,11 @@ void club_finance_list(ApiContext *ctx) {
 
     char sql[512];
     snprintf(sql, sizeof(sql),
-        "SELECT finance_id, type, amount, description, source, "
-        "DATE_FORMAT(record_time,'%%Y-%%m-%%d') AS date, operator_name "
-        "FROM finance WHERE club_id=%d %s ORDER BY record_time DESC",
+        "SELECT f.finance_id, f.type, f.amount, f.description, f.source, "
+        "DATE_FORMAT(f.record_time,'%%Y-%%m-%%d') AS date, "
+        "COALESCE(u.real_name, '') AS operator_name "
+        "FROM finance f LEFT JOIN users u ON f.operator_id=u.user_id "
+        "WHERE f.club_id=%d %s ORDER BY f.record_time DESC",
         club_id, where);
 
     MYSQL_RES *res = db_query("%s", sql);

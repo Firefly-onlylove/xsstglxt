@@ -57,6 +57,7 @@ const routes = [
     children: [
       { path: '', redirect: '/club-admin/dashboard' },
       { path: 'dashboard',     component: () => import('@/views/club-admin/Dashboard.vue') },
+      { path: 'dashboard/:id', component: () => import('@/views/club-admin/Dashboard.vue') },
       { path: 'member-mgmt',   component: () => import('@/views/club-admin/MemberMgmt.vue') },
       { path: 'activity-mgmt', component: () => import('@/views/club-admin/ActivityMgmt.vue') },
       { path: 'finance',       component: () => import('@/views/club-admin/Finance.vue') },

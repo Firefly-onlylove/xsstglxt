@@ -194,17 +194,30 @@ static void handle_logout(ApiContext *ctx) {
         "{\"code\":0,\"msg\":\"已登出\"}");
 }
 
-/* GET /api/me  返回当前登录用户（未登录返回错误码，前端据此跳登录页） */
+/* GET /api/me  返回当前登录用户（未登录返回错误码，前端据此跳登录页）
+ * 注意：如果用户在 members 表中是社长/副社长，即使 users.role 还是
+ * general_student/club_member，前端也应看到 role=club_admin，确保管理后台可用。 */
 static void handle_me(ApiContext *ctx) {
     if (!ctx->user) { api_error(ctx, ERR_AUTH, "未登录"); return; }
     User *u = ctx->user;
+
+    /* 动态判断有效角色：社长/副社长的 users.role 可能未同步为 club_admin */
+    const char *effective_role = u->role;
+    if (strcmp(u->role, "general_student") == 0 || strcmp(u->role, "club_member") == 0) {
+        int is_admin = db_query_int(
+            "SELECT COUNT(*) FROM members "
+            "WHERE user_id=%d AND role IN ('president','vice_president') "
+            "AND join_status='approved' AND left_at IS NULL", u->user_id);
+        if (is_admin > 0) effective_role = "club_admin";
+    }
+
     mg_http_reply(ctx->conn, 200,
         "Content-Type: application/json; charset=utf-8\r\n",
         "{\"code\":0,\"msg\":\"ok\",\"data\":{"
         "\"user_id\":%d,\"username\":%m,\"real_name\":%m,\"role\":%m,"
         "\"college_id\":%d,\"college_name\":%m}}",
         u->user_id, MG_ESC(u->username), MG_ESC(u->real_name),
-        MG_ESC(u->role), u->college_id, MG_ESC(u->college_name));
+        MG_ESC(effective_role), u->college_id, MG_ESC(u->college_name));
 }
 
 /* ─────────────────────────── 请求分发 ─────────────────────────── */

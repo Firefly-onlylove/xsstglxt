@@ -133,8 +133,8 @@ const recCols = [
 ]
 const reimbCols = [
   { prop: 'amount',      label: '金额',   width: 100 },
-  { prop: 'purpose',     label: '用途' },
-  { prop: 'created_at',  label: '申请时间', width: 160 },
+  { prop: 'description', label: '用途' },
+  { prop: 'submitted_at', label: '申请时间', width: 160 },
   { slot: 'status',      label: '状态',   width: 120 }
 ]
 const reimbStatusLabel = s => ({ college_pending:'院级待审', school_pending:'校级待审', approved:'已通过', rejected:'已驳回' }[s] || s)
@@ -160,7 +160,13 @@ async function loadReimbs() {
   loading.value = true
   const res = await api.get('/api/club/' + clubId.value + '/reimbursements', { page: reimbPage.value, page_size: 10 })
   loading.value = false
-  if (res.code === 0) { reimbs.value = res.data.list || []; reimbTotal.value = res.data.total || 0 }
+  if (res.code === 0) {
+    reimbs.value = res.data.list || []
+    reimbTotal.value = res.data.total || 0
+    /* 统计真正待审批的报销数（status=pending 且 college_reviewed=pending，即尚未被学院审批的） */
+    const pending = (res.data.list || []).filter(r => r.status === 'pending')
+    summary.value[3].value = pending.length
+  }
 }
 function openAddRecord() { recForm.value = { type: 'income', amount: 0, description: '', date: '' }; addRecordVisible.value = true }
 function openReimb() { reimbForm.value = { amount: null, description: '', receipt_path: '' }; reimbVisible.value = true }
@@ -185,9 +191,9 @@ async function submitReimb() {
 }
 
 onMounted(() => {
-  if (clubId.value) loadRecords()
+  if (clubId.value) { loadRecords(); loadReimbs() }
   else {
-    const stop = watch(clubId, (val) => { if (val) { stop(); loadRecords() } })
+    const stop = watch(clubId, (val) => { if (val) { stop(); loadRecords(); loadReimbs() } })
   }
 })
 </script>
