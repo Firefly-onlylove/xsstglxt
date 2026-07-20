@@ -117,6 +117,7 @@ async function approve(row, pass) {
   if (pass) {
     const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + row.member_id + '/approve')
     if (res.code === 0) { ElMessage.success('已通过'); loadApplications() }
+    else { ElMessage.error(res.msg || '操作失败') }
     return
   }
   currentApp.value = row; rejectReason.value = ''; rejectVisible.value = true
@@ -127,6 +128,7 @@ async function doReject() {
   const res = await api.post('/api/club/' + clubId.value + '/join-requests/' + currentApp.value.member_id + '/reject',
     { reason: rejectReason.value })
   if (res.code === 0) { ElMessage.success('已拒绝'); rejectVisible.value = false; loadApplications() }
+  else { ElMessage.error(res.msg || '操作失败') }
 }
 const loadAll = () => showMembers.value ? loadMembers() : loadApplications()
 
