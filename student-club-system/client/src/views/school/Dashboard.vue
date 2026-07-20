@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onActivated, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/api'
 
@@ -125,17 +125,15 @@ function calcHeight() {
   tableMaxHeight.value = Math.max(280, window.innerHeight - 520)
 }
 
-onMounted(async () => {
-  calcHeight()
-  window.addEventListener('resize', calcHeight)
-
+async function loadDashboard() {
   const res = await api.get('/api/school/dashboard')
   if (res.code === 0) {
     const d = res.data
     statCards.value[0].value = d.active_clubs
     statCards.value[1].value = d.total_members
     statCards.value[2].value = d.monthly_activities
-    statCards.value[3].value = d.pending_approvals
+    /* 待审批 = 社团创建待审批 + 报销待学校终审 */
+    statCards.value[3].value = d.pending_approvals + (d.pending_reimb || 0)
     logs.value = d.recent_logs || []
   }
 
@@ -145,6 +143,17 @@ onMounted(async () => {
     collegeData.value = statsRes.data.college_stats || []
   }
   collegeLoading.value = false
+}
+
+onMounted(() => {
+  calcHeight()
+  window.addEventListener('resize', calcHeight)
+  loadDashboard()
+})
+
+/* 使用 onActivated 让页面被 keep-alive 缓存后每次进入都刷新 */
+onActivated(() => {
+  loadDashboard()
 })
 </script>
 

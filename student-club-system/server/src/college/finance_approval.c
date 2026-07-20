@@ -4,17 +4,19 @@
  *
  * 对应处理函数：
  *   col_reimb_pending  GET  待审批报销列表
- *   col_reimb_approve  POST 通过报销
+ *   col_reimb_approve  POST 通过报销（提交至学校终审）
  *   col_reimb_reject   POST 驳回报销
  *   col_limit_list     GET  本院社团报销额度列表
  *   col_limit_set      POST 设定某社团报销额度
- * 对应前端页面：C3 报销审批与额度管理页
  *
- * 启用方法：把下面第一行的  #if 0  改成  #if 1。
+ * 启用方法：把下面的 #if 0 改成 #if 1。
  *
  * 权限要点：只能审批【本院院级社团】的报销；额度也只能给本院社团设。
- * 审批通过后，reimbursement_limits.current_period_used 由触发器自动累加
- * （见 03_triggers.sql 的 trg_reimbursement_after_update）。
+ *
+ * 二级审批流程：
+ *   社团提交(status=pending, college_reviewed=pending)
+ *   → 学院审批通过(college_reviewed=approved, 提交至学校)
+ *   → 学校最终审批(status=approved) → 记 finance 支出
  */
 #if 1
 
@@ -27,7 +29,12 @@
 
 #include <stdio.h>
 
-/* GET /api/college/reimbursements/pending —— 本院待审批/已审批报销 */
+/* GET /api/college/reimbursements/pending —— 本院报销列表
+ * 可选参数 status:
+ *   pending = 社团刚提交的待审批（默认：college_reviewed='pending' AND status='pending'）
+ *   approved = 学院已批过的（college_reviewed='approved'）
+ *   rejected = 学院已驳回的（college_reviewed='rejected'）
+ */
 void col_reimb_pending(ApiContext *ctx) {
     if (!api_require_college_admin(ctx)) return;
     int cid = ctx->user->college_id;
@@ -37,58 +44,52 @@ void col_reimb_pending(ApiContext *ctx) {
 
     MYSQL_RES *res;
     if (strcmp(status, "approved") == 0) {
+        /* 学院已批——college_reviewed='approved'，无论学校端是否最终处理 */
         res = db_query(
             "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
             "r.description, r.receipt_path, u.real_name AS applicant_name, "
-            "r.submitted_at, r.status, r.review_comment "
-            "FROM reimbursement r "
-            "JOIN clubs c ON r.club_id=c.club_id "
-            "LEFT JOIN users u ON r.applicant_id=u.user_id "
-            "WHERE c.college_id=%d AND c.level='college' AND r.status='approved' "
-            "ORDER BY r.submitted_at DESC", cid);
-    } else if (strcmp(status, "rejected") == 0) {
-        res = db_query(
-            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
-            "r.description, r.receipt_path, u.real_name AS applicant_name, "
-            "r.submitted_at, r.status, r.review_comment "
-            "FROM reimbursement r "
-            "JOIN clubs c ON r.club_id=c.club_id "
-            "LEFT JOIN users u ON r.applicant_id=u.user_id "
-            "WHERE c.college_id=%d AND c.level='college' AND r.status='rejected' "
-            "ORDER BY r.submitted_at DESC", cid);
-    } else if (strcmp(status, "pending") == 0) {
-        res = db_query(
-            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
-            "r.description, r.receipt_path, u.real_name AS applicant_name, "
-            "r.submitted_at, r.status, r.review_comment "
-            "FROM reimbursement r "
-            "JOIN clubs c ON r.club_id=c.club_id "
-            "LEFT JOIN users u ON r.applicant_id=u.user_id "
-            "WHERE c.college_id=%d AND c.level='college' AND r.status='pending' "
-            "ORDER BY r.submitted_at", cid);
-    } else {
-        /* history 或空：返回已处理的报销（approved + rejected） */
-        res = db_query(
-            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
-            "r.description, r.receipt_path, u.real_name AS applicant_name, "
-            "r.submitted_at, r.status, r.review_comment "
+            "r.submitted_at, r.status, r.college_reviewed, r.review_comment "
             "FROM reimbursement r "
             "JOIN clubs c ON r.club_id=c.club_id "
             "LEFT JOIN users u ON r.applicant_id=u.user_id "
             "WHERE c.college_id=%d AND c.level='college' "
-            "AND r.status IN ('approved','rejected') "
+            "AND r.college_reviewed='approved' "
             "ORDER BY r.submitted_at DESC", cid);
+    } else if (strcmp(status, "rejected") == 0) {
+        /* 学院已驳回 */
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
+            "r.description, r.receipt_path, u.real_name AS applicant_name, "
+            "r.submitted_at, r.status, r.college_reviewed, r.review_comment "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.college_id=%d AND c.level='college' "
+            "AND r.college_reviewed='rejected' "
+            "ORDER BY r.submitted_at DESC", cid);
+    } else {
+        /* 默认 pending：社团刚提交的，学院尚未处理 */
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
+            "r.description, r.receipt_path, u.real_name AS applicant_name, "
+            "r.submitted_at, r.status, r.college_reviewed, r.review_comment "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.college_id=%d AND c.level='college' "
+            "AND r.college_reviewed='pending' AND r.status='pending' "
+            "ORDER BY r.submitted_at", cid);
     }
     api_send_result_data(ctx, res);
 }
 
-/* 确认某报销单属于本院院级社团，返回申请人 id（0=无权/不存在） */
+/* 确认某报销单属于本院院级社团且未处理，返回申请人 id（0=无权/不存在） */
 static int check_reimb_owned(int reimbursement_id, int college_id, double *out_amount) {
     MYSQL_RES *res = db_query(
         "SELECT r.applicant_id, r.amount FROM reimbursement r "
         "JOIN clubs c ON r.club_id=c.club_id "
         "WHERE r.reimbursement_id=%d AND c.college_id=%d "
-        "AND c.level='college' AND r.status='pending'",
+        "AND c.level='college' AND r.status='pending' AND r.college_reviewed='pending'",
         reimbursement_id, college_id);
     if (!res || mysql_num_rows(res) == 0) {
         if (res) mysql_free_result(res);
@@ -101,30 +102,40 @@ static int check_reimb_owned(int reimbursement_id, int college_id, double *out_a
     return applicant;
 }
 
-/* POST /api/college/reimbursements/{id}/approve —— 通过 */
+/* POST /api/college/reimbursements/{id}/approve —— 学院审批通过
+ * 只设置 college_reviewed='approved'，status 仍保留 pending，
+ * 等待学校管理员最终审批。*/
 void col_reimb_approve(ApiContext *ctx) {
     if (!api_require_college_admin(ctx)) return;
     int cid = ctx->user->college_id;
-    int rid = api_get_path_int(ctx, 2);   /* /api/college/reimbursements/{id}/approve */
+    int rid = api_get_path_int(ctx, 2);
 
     double amount = 0;
     int applicant = check_reimb_owned(rid, cid, &amount);
     if (applicant == 0) { api_error(ctx, ERR_PERMISSION, "无权审批或该报销已处理"); return; }
 
-    /* 置为通过；周期已用额度由触发器自动累加 */
-    db_execute("UPDATE reimbursement SET status='approved', reviewer_id=%d, "
+    /* 学院审批通过：设 college_reviewed='approved'，status 仍为 pending，等待学校终审 */
+    db_execute("UPDATE reimbursement SET college_reviewed='approved', reviewer_id=%d, "
                "reviewed_at=NOW() WHERE reimbursement_id=%d",
                ctx->user->user_id, rid);
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
-               "VALUES (%d, 'approve_reimbursement', 'reimbursement', %d, '院级报销审批通过')",
+               "VALUES (%d, 'approve_reimbursement', 'reimbursement', %d, '学院审批通过，提交至学校终审')",
                ctx->user->user_id, rid);
 
-    notification_send(applicant, "报销申请已通过",
-                      "您提交的报销申请已通过学院审核。", "reimbursement_result", rid);
-    api_ok_msg(ctx, "已通过");
+    /* 通知学校管理员进行最终审批 */
+    notification_notify_school_admins("新的报销待终审",
+        "学院已审批通过一笔报销申请，请前往财务监督处理。",
+        "reimb_notify", rid);
+
+    /* 通知申请人：学院已通过，等待学校终审 */
+    notification_send(applicant, "报销申请学院已通过",
+        "您的报销申请已通过学院审核，等待学校终审。",
+        "reimbursement_result", rid);
+
+    api_ok_msg(ctx, "已通过（提交至学校终审）");
 }
 
-/* POST /api/college/reimbursements/{id}/reject —— 驳回（需原因） */
+/* POST /api/college/reimbursements/{id}/reject —— 学院驳回（需原因） */
 void col_reimb_reject(ApiContext *ctx) {
     if (!api_require_college_admin(ctx)) return;
     int cid = ctx->user->college_id;
@@ -138,12 +149,13 @@ void col_reimb_reject(ApiContext *ctx) {
     if (applicant == 0) { api_error(ctx, ERR_PERMISSION, "无权审批或该报销已处理"); return; }
 
     char *e = db_escape(reason);
-    db_execute("UPDATE reimbursement SET status='rejected', reviewer_id=%d, "
-               "review_comment='%s', reviewed_at=NOW() WHERE reimbursement_id=%d",
+    db_execute("UPDATE reimbursement SET status='rejected', college_reviewed='rejected', "
+               "reviewer_id=%d, review_comment='%s', reviewed_at=NOW() "
+               "WHERE reimbursement_id=%d",
                ctx->user->user_id, e, rid);
     free(e);
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
-               "VALUES (%d, 'reject_reimbursement', 'reimbursement', %d, '院级报销驳回')",
+               "VALUES (%d, 'reject_reimbursement', 'reimbursement', %d, '学院驳回报销')",
                ctx->user->user_id, rid);
 
     notification_send(applicant, "报销申请被驳回", reason, "reimbursement_result", rid);
@@ -155,7 +167,6 @@ void col_limit_list(ApiContext *ctx) {
     if (!api_require_college_admin(ctx)) return;
     int cid = ctx->user->college_id;
 
-    /* 左连接额度表：未设过额度的社团也要列出（额度字段为 NULL） */
     MYSQL_RES *res = db_query(
         "SELECT c.club_id, c.club_name, "
         "rl.single_limit, rl.period_type, rl.period_limit, rl.current_period_used "
@@ -171,7 +182,7 @@ void col_limit_list(ApiContext *ctx) {
 void col_limit_set(ApiContext *ctx) {
     if (!api_require_college_admin(ctx)) return;
     int cid = ctx->user->college_id;
-    int club_id = api_get_path_int(ctx, 2);   /* /api/college/limits/{club_id} */
+    int club_id = api_get_path_int(ctx, 2);
 
     double single_limit = api_get_json_double(ctx, "single_limit", 0);
     double period_limit = api_get_json_double(ctx, "period_limit", 0);
@@ -182,13 +193,11 @@ void col_limit_set(ApiContext *ctx) {
         utils_strlcpy(period_type, "monthly", sizeof(period_type));
     }
 
-    /* 确认社团属于本院 */
     int owned = db_query_int(
         "SELECT COUNT(*) FROM clubs WHERE club_id=%d AND college_id=%d AND level='college'",
         club_id, cid);
     if (owned == 0) { api_error(ctx, ERR_PERMISSION, "该社团不属于本院"); return; }
 
-    /* 有则更新，无则插入（club_id 唯一键）。用 ON DUPLICATE KEY 简化。 */
     char today[11];
     utils_now_date(today);
     int rc = db_execute(

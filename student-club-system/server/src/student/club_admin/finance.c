@@ -199,7 +199,7 @@ void club_reimb_create(ApiContext *ctx) {
     int rc = db_execute(
         "INSERT INTO reimbursement "
         "(club_id, applicant_id, amount, description, receipt_path, status, submitted_at) "
-        "VALUES (%d, %d, %.2f, '%s', '%s', 'college_pending', NOW())",
+        "VALUES (%d, %d, %.2f, '%s', '%s', 'pending', NOW())",
         club_id, ctx->user->user_id, amount, e_desc, e_path);
     free(e_desc); free(e_path);
 
