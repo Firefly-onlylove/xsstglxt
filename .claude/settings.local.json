@@ -93,7 +93,14 @@
       "Bash(CC=\"C:/mingw4/mingw64/bin/gcc\" MYSQL_INC=\"-IC:/Program Files/MySQL/MySQL Server 8.0/include\" MYSQL_LIB=\"-LC:/Program Files/MySQL/MySQL Server 8.0/lib\" mingw32-make clean)",
       "Bash(\"/c/mingw4/mingw64/bin/mingw32-make\" CC=\"/c/mingw4/mingw64/bin/gcc\" clean)",
       "Bash(\"/c/mingw4/mingw64/bin/mingw32-make\" CC=\"/c/mingw4/mingw64/bin/gcc\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(powershell -Command \"Stop-Process -Name scms -Force -ErrorAction SilentlyContinue\")",
+      "Bash(ls \"C:/7.17sxxm/scms.exe\")",
+      "Bash(ls C:\\\\\\\\Users\\\\\\\\liuying\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\C--7-17sxxm\\\\\\\\e8081bb5-49f5-45ef-931f-d437ef4915fd\\\\\\\\tasks\\\\\\\\ *)",
+      "Bash(grep -v \"^[+-]\\\\s*/\\\\*\\\\|\\\\^[+-]\\\\s*\\\\*\\\\|\\\\^[+-]\\\\s*\\\\*/\\\\|^[+-]$\")",
+      "Bash(\"/c/mingw4/mingw64/bin/mingw32-make\" clean *)",
+      "Bash(git -C \"C:/7.17sxxm\" show HEAD:student-club-system/server/src/main.c)",
+      "Bash(cp /tmp/main_orig.c \"C:/7.17sxxm/student-club-system/server/src/main.c\")"
     ]
   }
 }
