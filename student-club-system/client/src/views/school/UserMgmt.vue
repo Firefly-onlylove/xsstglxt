@@ -38,7 +38,8 @@
         <el-button link :type="row.status == 0 ? 'success' : 'warning'"
           @click="toggleStatus(row)">{{ row.status == 0 ? '启用' : '禁用' }}</el-button>
         <el-button link type="info" @click="resetPwd(row)">重置密码</el-button>
-        <el-button link type="danger" @click="openRestrict(row)">限制</el-button>
+        <el-button v-if="row.status === 2" link type="success" @click="openLiftRestrict(row)">解除限制</el-button>
+        <el-button v-else link type="danger" @click="openRestrict(row)">限制</el-button>
       </template>
     </DataTable>
 
@@ -106,6 +107,25 @@
         <el-button type="danger" @click="doRestrict">确认限制</el-button>
       </template>
     </el-dialog>
+
+    <!-- 解除限制 -->
+    <el-dialog v-model="liftVisible" title="解除限制" width="420px">
+      <p style="margin-bottom:12px">用户：<b>{{ current?.real_name }}</b></p>
+      <el-table :data="activeRestrictions" max-height="240" style="width:100%">
+        <el-table-column prop="restriction_type" label="限制类型" width="120">
+          <template #default="{ row }">
+            {{ row.restriction_type === 'ban_join' ? '禁止加入社团' : '禁止参加活动' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="reason" label="原因" />
+        <el-table-column label="操作" width="80">
+          <template #default="{ row }">
+            <el-button link type="danger" @click="doLiftRestrict(row.restriction_id)">解除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="activeRestrictions.length === 0" description="该用户当前没有生效中的限制" />
+    </el-dialog>
   </div>
 </template>
 
@@ -128,6 +148,8 @@ const detailVisible = ref(false)
 const restrictVisible = ref(false)
 const restrictForm = ref()
 const restrictData = ref({ restriction_type: '', reason: '' })
+const liftVisible = ref(false)
+const activeRestrictions = ref([])
 const createModal = ref()
 const editVisible = ref(false)
 const editForm = ref()
@@ -194,6 +216,27 @@ async function doRestrict() {
   const res = await api.post('/api/school/users/' + current.value.user_id + '/restrict', restrictData.value)
   if (res.code === 0) { ElMessage.success('已限制'); restrictVisible.value = false; loadData() }
   else ElMessage.error(res.msg || '限制失败')
+}
+
+async function openLiftRestrict(row) {
+  current.value = row
+  const res = await api.get('/api/school/restrictions', { user_id: row.user_id })
+  activeRestrictions.value = res.code === 0 ? (res.data.list || []) : []
+  liftVisible.value = true
+}
+
+async function doLiftRestrict(restriction_id) {
+  await ElMessageBox.confirm('确认解除该限制？', '提示', { type: 'warning' })
+  const res = await api.post('/api/school/users/' + current.value.user_id + '/lift-restriction', { restriction_id })
+  if (res.code === 0) {
+    ElMessage.success('已解除限制')
+    // 从列表中移除已解除的
+    activeRestrictions.value = activeRestrictions.value.filter(r => r.restriction_id !== restriction_id)
+    if (activeRestrictions.value.length === 0) liftVisible.value = false
+    loadData()
+  } else {
+    ElMessage.error(res.msg || '解除失败')
+  }
 }
 
 function openCreateAdmin() {
