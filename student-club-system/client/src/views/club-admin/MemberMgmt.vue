@@ -111,6 +111,7 @@ async function removeMember(row) {
   await ElMessageBox.confirm(`确认将 ${row.real_name} 移出社团？`, '提示', { type: 'warning' })
   const res = await api.post('/api/club/' + clubId.value + '/members/' + row.member_id + '/remove')
   if (res.code === 0) { ElMessage.success('已移出'); loadMembers() }
+  else { ElMessage.error(res.msg || '操作失败') }
 }
 async function approve(row, pass) {
   if (pass) {
