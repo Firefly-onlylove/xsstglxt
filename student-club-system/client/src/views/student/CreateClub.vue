@@ -88,7 +88,7 @@ async function doSubmit() {
     ElMessage.success('申请已提交，等待学校管理员审批')
     form.value = { name: '', club_type: '学术', college_id: null, description: '', reason: '', advisor: '' }
     loadMyApplications()
-  } else ElMessage.error(res.msg)
+  } else ElMessage.error(res.message)
 }
 
 async function loadMyApplications() {

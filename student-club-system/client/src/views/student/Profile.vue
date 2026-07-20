@@ -29,7 +29,7 @@
                 <el-form-item label="姓名"><el-input v-model="form.real_name" :disabled="!editing" /></el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="学号"><el-input v-model="form.student_id" disabled /></el-form-item>
+                <el-form-item label="学号"><el-input v-model="form.student_id" :disabled="!editing" /></el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="手机号"><el-input v-model="form.phone" :disabled="!editing" /></el-form-item>
@@ -91,34 +91,24 @@ const roleLabel = r => ({ school_admin:'学校管理员', college_admin:'学院�
 
 async function saveProfile() {
   saving.value = true
-  const res = await api.put('/api/my/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email })
+  const res = await api.put('/api/my/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email, student_id: form.value.student_id })
   saving.value = false
-  if (res.code === 0) { ElMessage.success('保存成功'); editing.value = false; loadProfile() }
-  else ElMessage.error(res.msg)
+  if (res.code === 0) { ElMessage.success('保存成功'); editing.value = false }
+  else ElMessage.error(res.message)
 }
 
 async function changePwd() {
   await pwdFormRef.value.validate()
   const res = await api.post('/api/my/change-password', { old_password: pwdForm.value.old_password, new_password: pwdForm.value.new_password })
   if (res.code === 0) { ElMessage.success('密码已修改'); pwdForm.value = { old_password:'', new_password:'', confirm_password:'' } }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
-async function loadProfile() {
+onMounted(async () => {
   const res = await api.get('/api/my/profile')
   if (res.code === 0) {
-    const d = res.data.list ? res.data.list[0] : res.data
-    user.value = d
-    form.value = {
-      username: d.username || '',
-      real_name: d.real_name || '',
-      student_id: d.student_no || '',
-      phone: d.phone || '',
-      email: d.email || '',
-      college_name: d.college_name || ''
-    }
+    user.value = res.data
+    Object.assign(form.value, res.data)
   }
-}
-
-onMounted(loadProfile)
+})
 </script>

@@ -149,7 +149,7 @@ async function doJoinWithFile() {
     showJoinDialog.value = false
     selectedFile.value = null
   } else {
-    ElMessage.error(res.msg)
+    ElMessage.error(res.message)
   }
 }
 

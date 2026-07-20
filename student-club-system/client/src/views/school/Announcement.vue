@@ -77,7 +77,7 @@ async function doCreate() {
   const res = await api.post('/api/school/announcements', form.value)
   submitting.value = false
   if (res.code === 0) { ElMessage.success('发布成功'); createVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function deleteAnnouncement(row) {

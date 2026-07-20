@@ -141,14 +141,14 @@ async function openDetail(row) {
 async function applyCandidate() {
   const res = await api.post('/api/club/' + clubId.value + '/elections/' + currentElec.value.election_id + '/signup')
   if (res.code === 0) { ElMessage.success('报名成功'); isCandidate.value = true }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function submitVote() {
   const res = await api.post('/api/club/' + clubId.value + '/elections/' + currentElec.value.election_id + '/vote',
     { candidate_id: selectedCandidate.value })
   if (res.code === 0) { ElMessage.success('投票成功'); hasVoted.value = true }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 function openCreate() { form.value = { title: '', signup_start: '', vote_start: '', vote_end: '' }; createVisible.value = true }
@@ -156,7 +156,7 @@ async function doCreate() {
   await createForm.value.validate()
   const res = await api.post('/api/club/' + clubId.value + '/elections', form.value)
   if (res.code === 0) { ElMessage.success('选举已发起'); createVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 onMounted(() => {

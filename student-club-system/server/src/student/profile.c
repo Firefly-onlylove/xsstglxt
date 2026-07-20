@@ -48,15 +48,15 @@ void stu_profile_get(ApiContext *ctx) {
     api_send_result_data(ctx, res);
 }
 
-/* PUT /api/my/profile — 修改姓名 / 手机号 / 邮箱 */
+/* PUT /api/my/profile — 修改手机号 / 邮箱 */
 void stu_profile_update(ApiContext *ctx) {
     if (!api_require_login(ctx)) return;
     int uid = ctx->user->user_id;
 
     char real_name[64] = "", phone[16] = "", email[128] = "";
-    api_get_json_str(ctx, "real_name", real_name, sizeof(real_name));
     api_get_json_str(ctx, "phone", phone, sizeof(phone));
     api_get_json_str(ctx, "email", email, sizeof(email));
+    api_get_json_str(ctx, "real_name", real_name, sizeof(real_name));
 
     if (!utils_is_empty(phone) && !utils_validate_phone(phone)) {
         api_error(ctx, ERR_VALIDATION, "手机号格式不正确"); return;

@@ -168,7 +168,7 @@ async function saveRecord() {
   await recFormRef.value.validate()
   const res = await api.post('/api/club/' + clubId.value + '/finance', recForm.value)
   if (res.code === 0) { ElMessage.success('已添加'); addRecordVisible.value = false; loadRecords() }
-  else ElMessage.error(res.msg || '添加失败')
+  else ElMessage.error(res.message || '添加失败')
 }
 async function deleteRecord(row) {
   await ElMessageBox.confirm('确认删除该记录？', '提示', { type: 'warning' })
@@ -181,7 +181,7 @@ async function submitReimb() {
   if (!reimbForm.value.receipt_path) { ElMessage.warning('请先上传发票'); return }
   const res = await api.post('/api/club/' + clubId.value + '/reimbursements', reimbForm.value)
   if (res.code === 0) { ElMessage.success('申请已提交'); reimbVisible.value = false; loadReimbs() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 onMounted(() => {

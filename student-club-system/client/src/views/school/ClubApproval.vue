@@ -162,7 +162,7 @@ async function quickApproveSchool(row) {
   await ElMessageBox.confirm('确认通过该社团申请（校级）？', '提示', { type: 'warning' })
   const res = await api.post('/api/school/clubs/' + row.club_id + '/approve', { level: 'school' })
   if (res.code === 0) { ElMessage.success('已通过'); loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 function showCollegeFor(row) {
@@ -176,7 +176,7 @@ async function approveFromDetail() {
   await ElMessageBox.confirm('确认通过该社团申请（校级）？', '提示', { type: 'warning' })
   const res = await api.post('/api/school/clubs/' + current.value.club_id + '/approve', { level: 'school' })
   if (res.code === 0) { ElMessage.success('已通过'); loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 function showCollegeApprove() {
@@ -194,7 +194,7 @@ async function approve(row, isSchool) {
     : { level: 'college', college_id: collegeForm.value.college_id }
   const res = await api.post('/api/school/clubs/' + current.value.club_id + '/approve', body)
   if (res.code === 0) { ElMessage.success('已通过'); collegeVisible.value = false; detailVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function doReject() {
@@ -204,7 +204,7 @@ async function doReject() {
     { reason: rejectData.value.reason })
   submitting.value = false
   if (res.code === 0) { ElMessage.success('已驳回'); rejectVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 onMounted(async () => {

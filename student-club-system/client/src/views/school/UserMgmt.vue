@@ -204,14 +204,14 @@ async function toggleStatus(row) {
     row.status = row.status == 0 ? 1 : 0
     ElMessage.success(action + '成功')
     loadData()
-  } else { ElMessage.error(res.msg || '操作失败') }
+  } else { ElMessage.error(res.message || '操作失败') }
 }
 
 async function resetPwd(row) {
   await ElMessageBox.confirm(`确认重置 ${row.real_name} 的密码为 scms123456 ？`, '提示', { type: 'warning' })
   const res = await api.post('/api/school/users/' + row.user_id + '/reset-password')
   if (res.code === 0) ElMessage.success('密码已重置为 scms123456')
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 function openRestrict(row) { current.value = row; restrictData.value = { restriction_type: '', reason: '' }; restrictVisible.value = true }
@@ -220,7 +220,7 @@ async function doRestrict() {
   await restrictForm.value.validate()
   const res = await api.post('/api/school/users/' + current.value.user_id + '/restrict', restrictData.value)
   if (res.code === 0) { ElMessage.success('已限制'); restrictVisible.value = false; loadData() }
-  else ElMessage.error(res.msg || '限制失败')
+  else ElMessage.error(res.message || '限制失败')
 }
 
 async function openLiftRestrict(row) {
@@ -274,13 +274,13 @@ async function doEdit() {
   const row = current.value
   const res = await api.post('/api/school/users/' + row.user_id + '/set-role', editData.value)
   if (res.code === 0) { ElMessage.success('修改成功'); editVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function doCreateAdmin(data) {
   const res = await api.post('/api/school/users/college-admin', data)
   if (res.code === 0) { ElMessage.success('创建成功'); createModal.value.close(); loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 onMounted(async () => {

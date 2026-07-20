@@ -174,7 +174,7 @@ async function saveActivity() {
   const res = await api[method](url, payload)
   submitting.value = false
   if (res.code === 0) { ElMessage.success('保存成功'); formVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 async function changeStatus(row, status) {
   const labels = { published:'发布', ongoing:'开始', finished:'结束' }
@@ -203,7 +203,7 @@ async function manualSignin() {
   const { value: keyword } = await ElMessageBox.prompt('输入学号或姓名', '手动签到')
   const res = await api.post('/api/club/' + clubId.value + '/activities/' + current.value.activity_id + '/manual-signin', { keyword })
   if (res.code === 0) { ElMessage.success('签到成功'); openSignin(current.value) }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 onMounted(() => {
   if (clubId.value) loadData()

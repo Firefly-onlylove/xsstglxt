@@ -73,7 +73,7 @@ async function save(data) {
   const method = editing.value?.class_id ? 'put' : 'post'
   const res = await api[method](url, data)
   if (res.code === 0) { ElMessage.success('保存成功'); formModal.value.close(); loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function deleteClass(row) {

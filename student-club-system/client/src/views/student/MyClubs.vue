@@ -26,7 +26,7 @@
               </el-button>
               <el-button size="small" type="warning"
                 v-if="c.role === 'president' || c.role === 'vice_president'"
-                @click="router.push('/club-admin/dashboard')">
+                @click="router.push('/club-admin/dashboard?clubId=' + c.club_id)">
                 管理后台
               </el-button>
             </div>

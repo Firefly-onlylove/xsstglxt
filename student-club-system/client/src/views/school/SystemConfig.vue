@@ -69,7 +69,7 @@ async function saveConfig() {
     key: 'club_member_limit_school',
     value: String(config.value.max_members_school)
   })
-  if (res.code !== 0) { saving.value = false; ElMessage.error(res.msg); return }
+  if (res.code !== 0) { saving.value = false; ElMessage.error(res.message); return }
   await api.post('/api/school/config', {
     key: 'club_member_limit_college',
     value: String(config.value.max_members_college)
@@ -97,7 +97,7 @@ async function doBackup() {
   const res = await api.post('/api/school/backup')
   backing.value = false
   if (res.code === 0) { ElMessage.success('备份成功'); loadBackups() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function loadBackups() {

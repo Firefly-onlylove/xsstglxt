@@ -84,7 +84,7 @@ async function joinClub(club) {
     ElMessage.success('申请已提交')
     club.join_status = 'pending'
   } else {
-    ElMessage.error(res.msg)
+    ElMessage.error(res.message)
   }
 }
 

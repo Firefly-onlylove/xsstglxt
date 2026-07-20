@@ -150,7 +150,7 @@ async function doLogin() {
   loginError.value = ''
   try {
     const res = await api.post('/api/login', loginData.value)
-    if (res.code !== 0) { loginError.value = res.msg || '登录失败'; return }
+    if (res.code !== 0) { loginError.value = res.message || '登录失败'; return }
     router.replace(ROLE_HOME[res.data.role] || '/student/club-square')
   } catch { loginError.value = '网络错误，请重试' }
   finally { loading.value = false }
@@ -162,7 +162,7 @@ async function doRegister() {
   regError.value = ''
   try {
     const res = await api.post('/api/register', regData.value)
-    if (res.code !== 0) { regError.value = res.msg || '注册失败'; return }
+    if (res.code !== 0) { regError.value = res.message || '注册失败'; return }
     ElMessage.success('注册成功，请登录')
     mode.value = 'login'
     loginData.value.username = regData.value.username

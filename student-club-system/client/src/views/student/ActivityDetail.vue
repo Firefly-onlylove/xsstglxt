@@ -116,7 +116,7 @@ async function doRegister() {
     activity.value.current_count = (activity.value.current_count || 0) + 1
     loadRegistrations()
   }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function cancelRegister() {
@@ -140,7 +140,7 @@ async function doSignin() {
   const res = await api.post('/api/activities/' + route.params.id + '/signin', { code: signinCode.value })
   signing.value = false
   if (res.code === 0) { ElMessage.success('签到成功！'); myStatus.value = 'signed_in' }
-  else ElMessage.error(res.msg || '签到码错误')
+  else ElMessage.error(res.message || '签到码错误')
 }
 
 async function loadData() {

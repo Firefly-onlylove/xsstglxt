@@ -13,7 +13,7 @@
       </el-tabs>
       <div v-loading="loading">
         <el-empty v-if="!loading && list.length === 0" description="暂无消息" />
-        <div v-for="msg in list" :key="msg.notification_id" class="msg-item"
+        <div v-for="msg in list" :key="msg.notif_id" class="msg-item"
           :class="{ unread: !msg.is_read }" @click="readMsg(msg)">
           <div class="msg-icon">
             <el-icon :style="{ color: typeColor(msg.type) }"><component :is="typeIcon(msg.type)" /></el-icon>
@@ -51,7 +51,7 @@ const typeColor = t => ({ system:'#1677FF', club:'#36CFC9', activity:'#FF7D00', 
 
 async function loadData() {
   loading.value = true
-  const res = await api.get('/api/notifications', {
+  const res = await api.get('/api/my/notifications', {
     page: page.value, page_size: 10,
     type: activeTab.value || undefined
   })
@@ -65,14 +65,14 @@ async function loadData() {
 
 async function readMsg(msg) {
   if (!msg.is_read) {
-    await api.post('/api/notifications/read', { notification_id: msg.notification_id })
+    await api.put('/api/my/notifications/' + msg.notif_id + '/read')
     msg.is_read = true
     unreadCount.value = Math.max(0, unreadCount.value - 1)
   }
 }
 
 async function markAllRead() {
-  const res = await api.post('/api/notifications/read-all')
+  const res = await api.put('/api/my/notifications/read-all')
   if (res.code === 0) { ElMessage.success('已全部标记已读'); loadData() }
 }
 

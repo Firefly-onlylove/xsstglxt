@@ -149,14 +149,14 @@ async function doSetLevel() {
   }
   const res = await api.post('/api/school/clubs/' + current.value.club_id + '/level', body)
   if (res.code === 0) { ElMessage.success('设置成功'); levelVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function doRename() {
   if (!renameName.value.trim()) { ElMessage.warning('请输入新名称'); return }
   const res = await api.post('/api/school/clubs/' + current.value.club_id + '/rename', { name: renameName.value.trim() })
   if (res.code === 0) { ElMessage.success('重命名成功'); renameVisible.value = false; loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 async function dissolve(row) {
@@ -166,7 +166,7 @@ async function dissolve(row) {
   })
   const res = await api.post('/api/school/clubs/' + row.club_id + '/dissolve', { reason })
   if (res.code === 0) { ElMessage.success('已解散'); loadData() }
-  else ElMessage.error(res.msg)
+  else ElMessage.error(res.message)
 }
 
 onMounted(async () => {
