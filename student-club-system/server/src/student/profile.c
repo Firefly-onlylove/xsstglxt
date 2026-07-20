@@ -29,7 +29,7 @@ void stu_profile_get(ApiContext *ctx) {
     int uid = ctx->user->user_id;
 
     MYSQL_RES *res = db_query(
-        "SELECT u.user_id, u.username, u.real_name, u.role, u.student_no, "
+        "SELECT u.user_id, u.username, u.real_name, u.avatar, u.role, u.student_no, "
         "u.phone, u.email, u.id_card, "
         "COALESCE(col.college_name,'') AS college_name, "
         "COALESCE(m.major_name,'') AS major_name, "

@@ -54,7 +54,7 @@ void col_student_list(ApiContext *ctx) {
     char where[512] = "WHERE 1=1";
     int off = 0;
     off = snprintf(where, sizeof(where),
-                   "WHERE u.college_id=%d AND u.role IN ('general_student','club_member','club_admin')",
+                   "WHERE (u.college_id=%d OR u.college_id IS NULL) AND u.role IN ('general_student','club_member','club_admin')",
                    cid);
     if (major_id > 0)
         off += snprintf(where + off, sizeof(where) - off, " AND u.major_id=%d", major_id);

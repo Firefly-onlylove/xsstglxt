@@ -50,7 +50,7 @@ void sch_user_list(ApiContext *ctx) {
         char frag[128];
         if (strcmp(role, "student") == 0 || strcmp(role, "general_student") == 0) {
             /* "student"/"general_student" 匹配普通学生（不含社团成员） */
-            snprintf(frag, sizeof(frag), " AND u.role='general_student'");
+            snprintf(frag, sizeof(frag), " AND u.role IN ('general_student','student','club_member')");
         } else {
             snprintf(frag, sizeof(frag), " AND u.role='%s'", er);
         }
