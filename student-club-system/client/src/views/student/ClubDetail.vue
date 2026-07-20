@@ -111,7 +111,8 @@ const selectedFile = ref(null)
 
 const isPresident = computed(() => joinStatus.value === 'joined' && club.value?.my_role === 'president')
 
-const roleLabel = r => ({ president: '社长', vice_president: '副社长', member: '普通成员' }[r] || r)
+import { CLUB_ROLE_LABEL, roleLabel as _rl } from '@/composables/useRole'
+const roleLabel = r => _rl(CLUB_ROLE_LABEL, r)
 const roleColor = r => ({ president: '#F53F3F', vice_president: '#FF7D00', member: '#1677FF' }[r] || '#1677FF')
 const actStatusLabel = s => ({ published:'报名中', ongoing:'进行中', finished:'已结束', cancelled:'已取消' }[s] || s)
 const actStatusType  = s => ({ published:'primary', ongoing:'success', finished:'info', cancelled:'danger' }[s] || '')

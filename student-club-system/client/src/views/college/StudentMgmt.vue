@@ -66,8 +66,9 @@ const restrictVisible = ref(false)
 const restrictForm = ref()
 const restrictData = ref({ restriction_type: '', reason: '' })
 
-const roleLabel = r => ({ general_student: '学生', club_member: '学生', club_admin: '社长/副社长', student: '学生' }[r] || r)
-const roleType  = r => ({ general_student: 'info', club_member: 'info', club_admin: 'success', student: 'info' }[r] || 'info')
+import { USER_ROLE_LABEL, USER_ROLE_TYPE, roleLabel as _rl, roleType as _rt } from '@/composables/useRole'
+const roleLabel = r => _rl(USER_ROLE_LABEL, r)
+const roleType  = r => _rt(USER_ROLE_TYPE, r)
 
 const columns = [
   { prop: 'student_no',  label: '学号',     width: 120 },

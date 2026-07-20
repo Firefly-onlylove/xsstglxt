@@ -182,8 +182,9 @@ const createFields = [
   { prop: 'phone',      label: '手机号', placeholder: '选填' }
 ]
 
-const roleLabel = r => ({ school_admin: '学校管理员', college_admin: '学院管理员', general_student: '学生', club_member: '社团成员', club_admin: '社长' }[r] || r)
-const roleType  = r => ({ school_admin: 'danger', college_admin: 'warning', general_student: '', club_member: 'info', club_admin: 'success' }[r] || '')
+import { USER_ROLE_LABEL, USER_ROLE_TYPE, roleLabel as _rl, roleType as _rt } from '@/composables/useRole'
+const roleLabel = r => _rl(USER_ROLE_LABEL, r)
+const roleType  = r => _rt(USER_ROLE_TYPE, r)
 
 async function loadData() {
   loading.value = true

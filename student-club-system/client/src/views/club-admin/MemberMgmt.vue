@@ -78,8 +78,9 @@ const appCols = [
   { slot: 'actions',     label: '操作',     width: 130, fixed: 'right' }
 ]
 
-const roleLabel = r => ({ president:'社团管理员', vice_president:'社团管理员', member:'成员' }[r] || r)
-const roleType  = r => ({ president:'', vice_president:'', member:'info' }[r] || '')
+import { CLUB_ROLE_LABEL, CLUB_ROLE_TYPE, roleLabel as _rl, roleType as _rt } from '@/composables/useRole'
+const roleLabel = r => _rl(CLUB_ROLE_LABEL, r)
+const roleType  = r => _rt(CLUB_ROLE_TYPE, r)
 
 async function loadMembers() {
   if (!clubId.value) return

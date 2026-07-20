@@ -8,7 +8,7 @@
             {{ (user?.real_name || user?.username || '?')[0] }}
           </el-avatar>
           <div style="font-size:20px;font-weight:700;margin:16px 0 4px">{{ user?.real_name }}</div>
-          <el-tag>{{ roleLabel(user?.role) }}</el-tag>
+          <el-tag>{{ roleLabelFn(user?.role) }}</el-tag>
           <div style="margin-top:16px;font-size:13px;color:#86909C">
             <div>{{ user?.college_name }} · {{ user?.class_name }}</div>
           </div>
@@ -87,7 +87,9 @@ const pwdRules = {
   confirm_password: [{ required: true, validator: (r, v, cb) =>
     v !== pwdForm.value.new_password ? cb('两次密码不一致') : cb() }]
 }
-const roleLabel = r => ({ school_admin:'学校管理员', college_admin:'学院管理员', student:'学生', club_admin:'社团管理员' }[r] || r)
+import { USER_ROLE_LABEL, roleLabel } from '@/composables/useRole'
+
+const roleLabelFn = r => roleLabel(USER_ROLE_LABEL, r)
 
 async function saveProfile() {
   saving.value = true

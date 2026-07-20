@@ -61,8 +61,9 @@ const loading = ref(false)
 const clubs = ref([])
 const applications = ref([])
 
-const roleLabel = r => ({ president:'社长', vice_president:'副社长', member:'普通成员' }[r] || r)
-const roleType  = r => ({ president:'danger', vice_president:'warning', member:'' }[r] || '')
+import { CLUB_ROLE_LABEL, CLUB_ROLE_TYPE, roleLabel as _rl, roleType as _rt } from '@/composables/useRole'
+const roleLabel = r => _rl(CLUB_ROLE_LABEL, r)
+const roleType  = r => _rt(CLUB_ROLE_TYPE, r)
 
 async function handleLeave(club) {
   try {
