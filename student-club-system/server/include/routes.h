@@ -88,6 +88,7 @@ void sch_restriction_list(ApiContext *ctx);  // GET  /api/school/restrictions �
 /* 财务监督 */
 void sch_finance_overview(ApiContext *ctx);  // GET  /api/school/finance —— 全校财务概览
 void sch_finance_club(ApiContext *ctx);      // GET  /api/school/finance/{club_id} —— 社团财务明细
+void sch_finance_school_clubs(ApiContext *ctx); // GET /api/school/finance/school-clubs —— 校级社团经费明细
 void sch_reimb_pending(ApiContext *ctx);     // GET  /api/school/reimbursements/pending —— 待审批报销列表
 void sch_reimb_approve(ApiContext *ctx);     // POST /api/school/reimbursements/{id}/approve —— 批准报销
 void sch_reimb_reject(ApiContext *ctx);      // POST /api/school/reimbursements/{id}/reject —— 驳回报销

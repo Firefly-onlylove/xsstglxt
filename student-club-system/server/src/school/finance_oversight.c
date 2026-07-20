@@ -190,19 +190,20 @@ void sch_reimb_pending(ApiContext *ctx) {
     api_send_result_data(ctx, res);
 }
 
-/* GET /api/school/reimbursements/college  学院端报销记录汇总
- * 学校端查看所有院级社团报销（不管哪个学院、什么状态）*/
+/* GET /api/school/reimbursements/college  学院报销记录汇总
+ * 学校端查看所有院级社团报销的最终状态（仅 approved/rejected，不含 pending）*/
 void sch_reimb_college_list(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
     MYSQL_RES *res = db_query(
         "SELECT r.reimbursement_id, r.club_id, c.club_name, col.college_name, r.amount, "
         "r.description, COALESCE(u.real_name,'—') AS applicant_name, "
-        "r.submitted_at, r.status, r.college_reviewed "
+        "r.submitted_at, r.status, r.college_reviewed, r.review_comment "
         "FROM reimbursement r "
         "JOIN clubs c ON r.club_id=c.club_id "
         "JOIN colleges col ON c.college_id=col.college_id "
         "LEFT JOIN users u ON r.applicant_id=u.user_id "
-        "WHERE c.level='college' ORDER BY r.submitted_at DESC");
+        "WHERE c.level='college' AND r.status IN ('approved','rejected') "
+        "ORDER BY r.submitted_at DESC");
     api_send_result_data(ctx, res);
 }
 
@@ -292,6 +293,25 @@ void sch_reimb_reject(ApiContext *ctx) {
                ctx->user->user_id, rid);
     notification_send(applicant, "报销申请被驳回", comment, "reimbursement_result", rid);
     api_ok_msg(ctx, "已驳回");
+}
+
+/* GET /api/school/finance/school-clubs  校级社团经费明细 */
+void sch_finance_school_clubs(ApiContext *ctx) {
+    if (!api_require_school_admin(ctx)) return;
+
+    /* 每个校级社团单独查询汇总 */
+    MYSQL_RES *r = db_query(
+        "SELECT c.club_id, c.club_name, c.level, "
+        "COALESCE(col.college_name,'—') AS college_name, "
+        "COALESCE((SELECT SUM(amount) FROM finance WHERE club_id=c.club_id AND type='income'),0) AS total_income, "
+        "COALESCE((SELECT SUM(amount) FROM finance WHERE club_id=c.club_id AND type='expense'),0) AS total_expense, "
+        "COALESCE((SELECT SUM(amount) FROM finance WHERE club_id=c.club_id AND type='income'),0) "
+        "- COALESCE((SELECT SUM(amount) FROM finance WHERE club_id=c.club_id AND type='expense'),0) AS balance "
+        "FROM clubs c "
+        "LEFT JOIN colleges col ON c.college_id=col.college_id "
+        "WHERE c.level='school' AND c.status='approved' "
+        "ORDER BY c.club_id");
+    api_send_result_data(ctx, r);
 }
 
 #endif /* 备用代码结束 */

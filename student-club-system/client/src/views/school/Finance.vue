@@ -37,14 +37,6 @@
       </el-tab-pane>
 
       <el-tab-pane label="学院报销记录" name="collegeReimb">
-        <FilterBar @search="loadCollegeReimb" @reset="()=>{loadCollegeReimb()}">
-          <el-select v-model="collegeReimbFilter.status" placeholder="学院审批" clearable style="width:130px">
-            <el-option label="全部" value="" />
-            <el-option label="待学院审" value="pending" />
-            <el-option label="学院已批" value="approved" />
-            <el-option label="学院驳回" value="rejected" />
-          </el-select>
-        </FilterBar>
         <DataTable :data="collegeReimbData" :columns="collegeReimbCols" :loading="clgReimbLoading">
           <template #college_reviewed="{ row }">
             <el-tag :type="collegeReviewType(row)" size="small">{{ collegeReviewLabel(row) }}</el-tag>
@@ -62,6 +54,21 @@
           <el-table-column prop="total_expense" label="总支出" />
           <el-table-column prop="balance" label="余额" />
           <el-table-column prop="club_count" label="社团数" width="80" />
+        </el-table>
+      </el-tab-pane>
+
+      <el-tab-pane label="校级社团经费" name="schoolClubs">
+        <el-table :data="schoolClubFinance" border style="width:100%" v-loading="schoolClubLoading">
+          <el-table-column prop="club_name" label="社团名称" min-width="140" />
+          <el-table-column prop="total_income" label="收入" width="120" align="right">
+            <template #default="{ row }">¥{{ (row.total_income || 0).toFixed(0) }}</template>
+          </el-table-column>
+          <el-table-column prop="total_expense" label="支出" width="120" align="right">
+            <template #default="{ row }">¥{{ (row.total_expense || 0).toFixed(0) }}</template>
+          </el-table-column>
+          <el-table-column prop="balance" label="余额" width="120" align="right">
+            <template #default="{ row }">¥{{ (row.balance || 0).toFixed(0) }}</template>
+          </el-table-column>
         </el-table>
       </el-tab-pane>
     </el-tabs>
@@ -118,8 +125,9 @@ const reimbVisible = ref(false)
 const currentReimb = ref(null)
 const collegeFinance = ref([])
 const collegeReimbData = ref([])
-const collegeReimbFilter = ref({})
 const clgReimbLoading = ref(false)
+const schoolClubFinance = ref([])
+const schoolClubLoading = ref(false)
 
 const collegeReimbCols = [
   { prop: 'club_name',      label: '社团',   width: 120 },
@@ -134,9 +142,16 @@ const collegeReimbCols = [
 
 async function loadCollegeReimb() {
   clgReimbLoading.value = true
-  const res = await api.get('/api/school/reimbursements/college', collegeReimbFilter.value)
+  const res = await api.get('/api/school/reimbursements/college')
   clgReimbLoading.value = false
   if (res.code === 0) collegeReimbData.value = res.data.list || []
+}
+
+async function loadSchoolClubs() {
+  schoolClubLoading.value = true
+  const res = await api.get('/api/school/finance/school-clubs')
+  schoolClubLoading.value = false
+  if (res.code === 0) schoolClubFinance.value = res.data.list || []
 }
 
 const reimbCols = [
@@ -153,7 +168,7 @@ const reimbCols = [
 const reimbStatusLabel = row => {
   const s = typeof row === 'string' ? row : row.status
   if (typeof row === 'object' && row.college_reviewed === 'approved' && s === 'pending') return '待学校终审'
-  return { pending:'待学院审', approved:'已通过', rejected:'已驳回' }[s] || s
+  return { pending:'待审批', approved:'已通过', rejected:'已驳回' }[s] || s
 }
 const reimbStatusType = row => {
   const s = typeof row === 'string' ? row : row.status
@@ -189,7 +204,7 @@ async function approveReimb(row, pass) {
   }
   await ElMessageBox.confirm('确认通过此报销申请（通过后将计入社团支出）？', '提示', { type: 'warning' })
   const res = await api.post('/api/school/reimbursements/' + row.reimbursement_id + '/approve', { approved: true })
-  if (res.code === 0) { ElMessage.success('已通过（已记支出）'); loadReimb(); loadOverview() }
+  if (res.code === 0) { ElMessage.success('已通过（已记支出）'); loadReimb(); loadOverview(); loadCollegeReimb(); loadSchoolClubs() }
 }
 
 async function loadOverview() {
@@ -207,5 +222,6 @@ onMounted(async () => {
   loadOverview()
   loadReimb()
   loadCollegeReimb()
+  loadSchoolClubs()
 })
 </script>

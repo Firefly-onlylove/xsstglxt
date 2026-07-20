@@ -71,6 +71,7 @@ static const Route ROUTES[] = {
 
     /* 财务监督 */
     { "GET",  "/api/school/finance/clubs",              sch_finance_overview,1 },
+    { "GET",  "/api/school/finance/school-clubs",       sch_finance_school_clubs, 1 },
     { "GET",  "/api/school/finance/*",                sch_finance_club,   1 },
     { "GET",  "/api/school/finance",                  sch_finance_overview,1 },
     { "GET",  "/api/school/reimbursements/pending",   sch_reimb_pending,  1 },
