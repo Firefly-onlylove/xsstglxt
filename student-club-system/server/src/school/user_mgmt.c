@@ -138,10 +138,18 @@ void sch_user_create_college_admin(ApiContext *ctx) {
 
     char *eu = db_escape(username), *en = db_escape(real_name);
     char *ep = phone[0] ? db_escape(phone) : NULL;
-    int ok = db_execute(
-        "INSERT INTO users (username, password, real_name, role, college_id, phone) "
-        "VALUES ('%s','%s','%s','college_admin',%d,%s)",
-        eu, hash, en, college_id, ep ? ep : "NULL");
+    int ok;
+    if (ep) {
+        ok = db_execute(
+            "INSERT INTO users (username, password, real_name, role, college_id, phone) "
+            "VALUES ('%s','%s','%s','college_admin',%d,'%s')",
+            eu, hash, en, college_id, ep);
+    } else {
+        ok = db_execute(
+            "INSERT INTO users (username, password, real_name, role, college_id) "
+            "VALUES ('%s','%s','%s','college_admin',%d)",
+            eu, hash, en, college_id);
+    }
     free(eu); free(en);
     if (ep) free(ep);
     if (ok < 0) { api_error(ctx, ERR_DB, "创建失败"); return; }
