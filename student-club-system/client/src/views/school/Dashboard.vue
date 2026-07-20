@@ -6,11 +6,7 @@
         <h2 class="greeting">社团管理系统</h2>
         <p class="subtitle">全校社团运营数据概览</p>
       </div>
-      <div class="header-actions">
-        <el-button type="primary" @click="router.push('/school/club-approval')">
-          社团审批 ({{ pendingCount }})
-        </el-button>
-      </div>
+      <div class="header-actions" /> <!-- 预留操作区 -->
     </div>
 
     <!-- 统计卡片 -->
