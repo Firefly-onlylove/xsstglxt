@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="page-header"><span class="page-title">我的社团</span></div>
     <div v-loading="loading">
@@ -20,6 +20,10 @@
             </div>
             <div style="display:flex;gap:8px">
               <el-button size="small" @click="router.push('/student/club-detail/'+c.club_id)">查看详情</el-button>
+              <el-button size="small" type="danger"
+                @click="handleLeave(c)">
+                退出社团
+              </el-button>
               <el-button size="small" type="warning"
                 v-if="c.role === 'president' || c.role === 'vice_president'"
                 @click="router.push('/club-admin/dashboard')">
@@ -49,6 +53,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { api } from '@/api'
 
 const router = useRouter()
@@ -58,6 +63,29 @@ const applications = ref([])
 
 const roleLabel = r => ({ president:'社长', vice_president:'副社长', member:'普通成员' }[r] || r)
 const roleType  = r => ({ president:'danger', vice_president:'warning', member:'' }[r] || '')
+
+async function handleLeave(club) {
+  try {
+    let confirmText = `确定要退出「${club.club_name}」吗？`
+    if (club.role === 'president') {
+      confirmText = '您是社长，退出社团前需先将社长职位转让给其他成员。确定要继续吗？'
+    }
+    await ElMessageBox.confirm(confirmText, '退出社团', {
+      confirmButtonText: '确定退出',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    const res = await api.post('/api/clubs/' + club.club_id + '/leave')
+    if (res.code === 0) {
+      ElMessage.success(res.message || '已退出社团')
+      clubs.value = clubs.value.filter(c => c.club_id !== club.club_id)
+    } else {
+      ElMessage.error(res.message || '退出失败')
+    }
+  } catch (e) {
+    // 用户取消，不做处理
+  }
+}
 
 onMounted(async () => {
   loading.value = true
