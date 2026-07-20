@@ -2,7 +2,6 @@
   <div>
     <div class="page-header">
       <span class="page-title">用户管理</span>
-      <el-button type="primary" @click="openCreateAdmin">+ 创建学院管理员</el-button>
     </div>
     <FilterBar @search="loadData" @reset="onReset">
       <el-input v-model="filters.keyword" placeholder="用户名/姓名" clearable style="width:200px" />

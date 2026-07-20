@@ -25,7 +25,6 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">个人中心</el-dropdown-item>
               <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -110,8 +109,8 @@ async function loadUser() {
 
 function goMessages() {
   const role = user.value?.role
-  if (role === 'college_admin') router.push('/college/dashboard')
-  else if (role === 'school_admin') router.push('/school/dashboard')
+  if (role === 'school_admin') router.push('/school/announcement')
+  else if (role === 'college_admin') router.push('/college/announcement')
   else router.push('/student/messages')
 }
 
@@ -119,8 +118,6 @@ async function handleUserCmd(cmd) {
   if (cmd === 'logout') {
     await api.post('/api/logout')
     router.push('/login')
-  } else if (cmd === 'profile') {
-    router.push('/student/profile')
   }
 }
 
