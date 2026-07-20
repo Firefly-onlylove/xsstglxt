@@ -13,7 +13,7 @@
         </el-form-item>
         <el-form-item label="所属学院" prop="college_id">
           <el-select v-model="form.college_id" style="width:100%">
-            <el-option v-for="c in colleges" :key="c.college_id" :label="c.name" :value="c.college_id" />
+            <el-option v-for="c in colleges" :key="c.college_id" :label="c.college_name" :value="c.college_id" />
           </el-select>
         </el-form-item>
         <el-form-item label="社团简介" prop="description">
@@ -34,8 +34,8 @@
       <!-- 我的申请记录 -->
       <el-divider>我的申请记录</el-divider>
       <el-table :data="myApplications" border size="small">
-        <el-table-column prop="name" label="社团名称" />
-        <el-table-column prop="club_type" label="类型" width="80" />
+        <el-table-column prop="club_name" label="社团名称" />
+        <el-table-column prop="category" label="类型" width="80" />
         <el-table-column prop="created_at" label="申请时间" width="160" />
         <el-table-column prop="status" label="状态" width="90">
           <template #default="{ row }">
@@ -75,7 +75,14 @@ const rules = {
 async function doSubmit() {
   await formRef.value.validate()
   submitting.value = true
-  const res = await api.post('/api/clubs/apply', form.value)
+  const payload = {
+    club_name: form.value.name,
+    category: form.value.club_type,
+    description: form.value.description,
+    advisor: form.value.advisor,
+    college_id: form.value.college_id
+  }
+  const res = await api.post('/api/clubs/apply', payload)
   submitting.value = false
   if (res.code === 0) {
     ElMessage.success('申请已提交，等待学校管理员审批')

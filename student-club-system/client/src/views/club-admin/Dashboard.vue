@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/api'
 import { useClub } from '@/composables/useClub'

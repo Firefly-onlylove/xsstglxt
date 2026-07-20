@@ -14,9 +14,12 @@
         <template #actions="{ row }">
           <el-button link type="warning"
             v-if="row.role === 'member'"
-            @click="promoteVP(row)">任命副社长</el-button>
+            @click="setManager(row)">设为管理员</el-button>
+          <el-button link type="primary"
+            v-if="row.role === 'president' || row.role === 'vice_president'"
+            @click="demoteToMember(row)">降为成员</el-button>
           <el-button link type="danger"
-            v-if="row.role !== 'president'"
+            v-if="row.role !== 'president' && row.role !== 'vice_president'"
             @click="removeMember(row)">移出</el-button>
         </template>
       </DataTable>
@@ -75,8 +78,8 @@ const appCols = [
   { slot: 'actions',     label: '操作',     width: 130, fixed: 'right' }
 ]
 
-const roleLabel = r => ({ president:'社长', vice_president:'副社长', member:'成员' }[r] || r)
-const roleType  = r => ({ president:'danger', vice_president:'warning', member:'' }[r] || '')
+const roleLabel = r => ({ president:'社团管理员', vice_president:'社团管理员', member:'成员' }[r] || r)
+const roleType  = r => ({ president:'', vice_president:'', member:'info' }[r] || '')
 
 async function loadMembers() {
   if (!clubId.value) return
@@ -92,10 +95,15 @@ async function loadApplications() {
   loading.value = false
   if (res.code === 0) { applications.value = res.data.list || []; appTotal.value = res.data.total || 0 }
 }
-async function promoteVP(row) {
-  await ElMessageBox.confirm(`确认任命 ${row.real_name} 为副社长？`, '提示', { type: 'warning' })
+async function setManager(row) {
+  await ElMessageBox.confirm(`确认将 ${row.real_name} 设为社团管理员？`, '提示', { type: 'warning' })
   const res = await api.post('/api/club/' + clubId.value + '/members/' + row.user_id + '/appoint', { role: 'vice_president' })
-  if (res.code === 0) { ElMessage.success('已任命'); loadMembers() }
+  if (res.code === 0) { ElMessage.success('已设为管理员'); loadMembers() }
+}
+async function demoteToMember(row) {
+  await ElMessageBox.confirm(`确认将 ${row.real_name} 降为普通成员？`, '提示', { type: 'warning' })
+  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.user_id + '/appoint', { role: 'member' })
+  if (res.code === 0) { ElMessage.success('已降为成员'); loadMembers() }
 }
 async function removeMember(row) {
   await ElMessageBox.confirm(`确认将 ${row.real_name} 移出社团？`, '提示', { type: 'warning' })

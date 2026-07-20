@@ -27,20 +27,58 @@
 
 #include <stdio.h>
 
-/* GET /api/college/reimbursements/pending —— 本院待审批报销 */
+/* GET /api/college/reimbursements/pending —— 本院待审批/已审批报销 */
 void col_reimb_pending(ApiContext *ctx) {
     if (!api_require_college_admin(ctx)) return;
     int cid = ctx->user->college_id;
 
-    MYSQL_RES *res = db_query(
-        "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
-        "r.description, r.receipt_path, u.real_name AS applicant_name, "
-        "r.submitted_at "
-        "FROM reimbursement r "
-        "JOIN clubs c ON r.club_id=c.club_id "
-        "LEFT JOIN users u ON r.applicant_id=u.user_id "
-        "WHERE c.college_id=%d AND c.level='college' AND r.status='pending' "
-        "ORDER BY r.submitted_at", cid);
+    char status[32] = "";
+    api_get_param(ctx, "status", status, sizeof(status));
+
+    MYSQL_RES *res;
+    if (strcmp(status, "approved") == 0) {
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
+            "r.description, r.receipt_path, u.real_name AS applicant_name, "
+            "r.submitted_at, r.status, r.review_comment "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.college_id=%d AND c.level='college' AND r.status='approved' "
+            "ORDER BY r.submitted_at DESC", cid);
+    } else if (strcmp(status, "rejected") == 0) {
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
+            "r.description, r.receipt_path, u.real_name AS applicant_name, "
+            "r.submitted_at, r.status, r.review_comment "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.college_id=%d AND c.level='college' AND r.status='rejected' "
+            "ORDER BY r.submitted_at DESC", cid);
+    } else if (strcmp(status, "pending") == 0) {
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
+            "r.description, r.receipt_path, u.real_name AS applicant_name, "
+            "r.submitted_at, r.status, r.review_comment "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.college_id=%d AND c.level='college' AND r.status='pending' "
+            "ORDER BY r.submitted_at", cid);
+    } else {
+        /* history 或空：返回已处理的报销（approved + rejected） */
+        res = db_query(
+            "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
+            "r.description, r.receipt_path, u.real_name AS applicant_name, "
+            "r.submitted_at, r.status, r.review_comment "
+            "FROM reimbursement r "
+            "JOIN clubs c ON r.club_id=c.club_id "
+            "LEFT JOIN users u ON r.applicant_id=u.user_id "
+            "WHERE c.college_id=%d AND c.level='college' "
+            "AND r.status IN ('approved','rejected') "
+            "ORDER BY r.submitted_at DESC", cid);
+    }
     api_send_result_data(ctx, res);
 }
 

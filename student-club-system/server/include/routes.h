@@ -119,6 +119,10 @@ void col_class_delete(ApiContext *ctx);      // DELETE /api/college/classes/{id}
 /* 本院社团监督 */
 void col_club_list(ApiContext *ctx);         // GET  /api/college/clubs —— 本院社团列表
 void col_club_detail(ApiContext *ctx);       // GET  /api/college/clubs/{id} —— 本院社团详情
+void col_club_members(ApiContext *ctx);      // GET  /api/college/clubs/{id}/members —— 社团成员
+void col_club_activities(ApiContext *ctx);   // GET  /api/college/clubs/{id}/activities —— 社团活动
+void col_club_rename(ApiContext *ctx);       // POST /api/college/clubs/{id}/rename —— 重命名
+void col_club_dissolve(ApiContext *ctx);     // POST /api/college/clubs/{id}/dissolve —— 解散
 
 /* 报销审批与额度管理 */
 void col_reimb_pending(ApiContext *ctx);     // GET  /api/college/reimbursements/pending —— 待审批报销

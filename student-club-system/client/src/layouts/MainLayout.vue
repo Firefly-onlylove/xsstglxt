@@ -90,17 +90,30 @@ const MENUS = {
   ]
 }
 
-const menuItems = computed(() => MENUS[user.value?.role] || [])
+const ROLE_MENU_KEY = {
+  general_student: 'student',
+  club_member: 'student',
+  club_admin: 'club_admin',
+  school_admin: 'school_admin',
+  college_admin: 'college_admin'
+}
+
+const menuItems = computed(() => MENUS[ROLE_MENU_KEY[user.value?.role]] || [])
 const userInitial = computed(() => (user.value?.real_name || user.value?.username || '?')[0])
 
 async function loadUser() {
   const res = await api.get('/api/me')
   if (res.code === 0) user.value = res.data
-  const nr = await api.get('/api/notifications', { page: 1, page_size: 1 })
-  if (nr.code === 0) unreadCount.value = nr.data?.unread_count || 0
+  const nr = await api.get('/api/notifications/unread')
+  if (nr.code === 0) unreadCount.value = nr.data?.unread || 0
 }
 
-function goMessages() { router.push('/student/messages') }
+function goMessages() {
+  const role = user.value?.role
+  if (role === 'college_admin') router.push('/college/dashboard')
+  else if (role === 'school_admin') router.push('/school/dashboard')
+  else router.push('/student/messages')
+}
 
 async function handleUserCmd(cmd) {
   if (cmd === 'logout') {

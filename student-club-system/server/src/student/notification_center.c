@@ -51,13 +51,29 @@ void pub_notif_list(ApiContext *ctx) {
 
     int total = db_query_int("SELECT COUNT(*) FROM notifications WHERE %s", filter);
 
+    int unread = db_query_int("SELECT COUNT(*) FROM notifications WHERE %s AND is_read=0", filter);
+
     MYSQL_RES *res = db_query(
         "SELECT notification_id, title, content, type, related_id, is_read, created_at "
         "FROM notifications WHERE %s "
         "ORDER BY created_at DESC LIMIT %d OFFSET %d",
         filter, page_size, offset);
 
-    api_send_result_paged(ctx, res, page, page_size, total);
+    /* 手动构造包含 unread_count 的分页响应 */
+    if (!res) { api_error(ctx, ERR_DB, "查询失败"); return; }
+    char *json = db_result_to_json_array(res);
+    mysql_free_result(res);
+    if (!json) { api_error(ctx, ERR_SYSTEM, "内存不足"); return; }
+
+    int total_pages = (page_size > 0) ? (total + page_size - 1) / page_size : 0;
+    mg_http_reply(ctx->conn, 200,
+                  "Content-Type: application/json; charset=utf-8\r\n"
+                  "Access-Control-Allow-Origin: *\r\n",
+                  "{\"code\":0,\"msg\":\"ok\",\"data\":%s,"
+                  "\"page\":%d,\"page_size\":%d,\"total\":%d,\"total_pages\":%d,"
+                  "\"unread_count\":%d}",
+                  json, page, page_size, total, total_pages, unread);
+    free(json);
 }
 
 /* GET /api/notifications/unread — 未读数 */

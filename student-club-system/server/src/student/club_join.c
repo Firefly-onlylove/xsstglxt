@@ -78,14 +78,18 @@ void stu_club_join(ApiContext *ctx) {
     if (e_attachment) {
         rc = db_execute(
             "INSERT INTO members (club_id, user_id, role, join_status, joined_at, attachment) "
-            "VALUES (%d, %d, 'member', '%s', NOW(), '%s')",
-            club_id, uid, status, e_attachment);
+            "VALUES (%d, %d, 'member', '%s', NOW(), '%s') "
+            "ON DUPLICATE KEY UPDATE role='member', join_status='%s', joined_at=NOW(), "
+            "left_at=NULL, attachment='%s'",
+            club_id, uid, status, e_attachment, status, e_attachment);
         free(e_attachment);
     } else {
         rc = db_execute(
             "INSERT INTO members (club_id, user_id, role, join_status, joined_at) "
-            "VALUES (%d, %d, 'member', '%s', NOW())",
-            club_id, uid, status);
+            "VALUES (%d, %d, 'member', '%s', NOW()) "
+            "ON DUPLICATE KEY UPDATE role='member', join_status='%s', joined_at=NOW(), "
+            "left_at=NULL",
+            club_id, uid, status, status);
     }
     if (rc < 0) { api_error(ctx, ERR_DB, "加入失败"); return; }
 

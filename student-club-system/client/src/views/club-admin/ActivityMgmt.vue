@@ -36,7 +36,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="人数上限" prop="max_participants">
-              <el-input-number v-model="actForm.max_participants" :min="1" style="width:100%" />
+              <el-input-number v-model="actForm.max_participants" :min="1" :disabled="false" style="width:100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -158,7 +158,7 @@ function onPage(e) { page.value = e.page; loadData() }
 function openCreate() { editing.value = {}; actForm.value = { title: '', max_participants: 50, start_time: '', end_time: '', signup_deadline: '', location: '', description: '', members_only: false, enable_signin: false }; formVisible.value = true }
 function openEdit(row) {
   editing.value = row
-  actForm.value = { title: row.title, max_participants: row.max_participants, start_time: row.start_time, end_time: row.end_time, signup_deadline: row.signup_deadline, location: row.location, description: row.description, members_only: row.join_permission === 'members_only', enable_signin: !!row.enable_signin }
+  actForm.value = { title: row.title, max_participants: Number(row.max_participants) || 50, start_time: row.start_time, end_time: row.end_time, signup_deadline: row.signup_deadline, location: row.location, description: row.description, members_only: row.join_permission === 'members_only', enable_signin: !!row.enable_signin }
   formVisible.value = true
 }
 async function saveActivity() {

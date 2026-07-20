@@ -48,11 +48,9 @@ void sch_user_list(ApiContext *ctx) {
     if (role[0]) {
         char *er = db_escape(role);
         char frag[128];
-        if (strcmp(role, "student") == 0) {
-            /* 前端传 "student"，但数据库角色字段实际为 general_student / club_member / club_admin */
-            snprintf(frag, sizeof(frag),
-                     " AND u.role IN ('%s','%s','%s')",
-                     ROLE_STUDENT, ROLE_MEMBER, ROLE_CLUB);
+        if (strcmp(role, "student") == 0 || strcmp(role, "general_student") == 0) {
+            /* "student"/"general_student" 匹配普通学生（不含社团成员） */
+            snprintf(frag, sizeof(frag), " AND u.role='general_student'");
         } else {
             snprintf(frag, sizeof(frag), " AND u.role='%s'", er);
         }
@@ -311,14 +309,15 @@ void sch_user_set_role(ApiContext *ctx) {
     int college_id = api_get_json_int(ctx, "college_id", 0);
     int club_id = api_get_json_int(ctx, "club_id", 0);
 
-    if (!utils_str_equal(role, "college_admin") && !utils_str_equal(role, "club_admin")) {
-        api_error(ctx, ERR_INPUT, "角色类型非法（只支持 college_admin 或 club_admin）"); return;
+    if (!utils_str_equal(role, "college_admin") && !utils_str_equal(role, "club_admin") &&
+        !utils_str_equal(role, "club_member") && !utils_str_equal(role, "general_student")) {
+        api_error(ctx, ERR_INPUT, "角色类型非法（支持 college_admin / club_admin / club_member / general_student）"); return;
     }
 
     if (utils_str_equal(role, "college_admin") && college_id <= 0) {
         api_error(ctx, ERR_INPUT, "请指定所属学院"); return;
     }
-    if (utils_str_equal(role, "club_admin") && club_id <= 0) {
+    if ((utils_str_equal(role, "club_admin") || utils_str_equal(role, "club_member")) && club_id <= 0) {
         api_error(ctx, ERR_INPUT, "请指定所属社团"); return;
     }
 
@@ -330,8 +329,7 @@ void sch_user_set_role(ApiContext *ctx) {
     if (utils_str_equal(role, "college_admin")) {
         db_execute("UPDATE users SET role='college_admin', college_id=%d WHERE user_id=%d",
                    college_id, id);
-    } else {
-        /* club_admin: 先通过 club_id 查出该社团所属的 college_id */
+    } else if (utils_str_equal(role, "club_admin")) {
         int club_college_id = db_query_int("SELECT college_id FROM clubs WHERE club_id=%d", club_id);
         if (club_college_id <= 0) {
             db_rollback();
@@ -339,8 +337,22 @@ void sch_user_set_role(ApiContext *ctx) {
         }
         db_execute("UPDATE users SET role='club_admin', college_id=%d WHERE user_id=%d",
                    club_college_id, id);
-        /* 同时插入社团管理员记录（如果不存在） */
         db_execute("INSERT IGNORE INTO club_admins (user_id, club_id) VALUES (%d, %d)", id, club_id);
+    } else if (utils_str_equal(role, "club_member")) {
+        int club_college_id = db_query_int("SELECT college_id FROM clubs WHERE club_id=%d", club_id);
+        if (club_college_id <= 0) {
+            db_rollback();
+            api_error(ctx, ERR_NOT_FOUND, "社团不存在"); return;
+        }
+        db_execute("UPDATE users SET role='club_member', college_id=%d WHERE user_id=%d",
+                   club_college_id, id);
+        /* 如果不是该社团成员则插入成员记录 */
+        db_execute("INSERT IGNORE INTO members (club_id, user_id, role, join_status) "
+                   "VALUES (%d, %d, 'member', 'approved')", club_id, id);
+    } else {
+        /* general_student: 清除特殊角色，去除 club_admins 关联和成员记录 */
+        db_execute("DELETE FROM club_admins WHERE user_id=%d", id);
+        db_execute("UPDATE users SET role='general_student' WHERE user_id=%d", id);
     }
     db_commit();
 

@@ -125,7 +125,7 @@ void stu_activity_register(ApiContext *ctx) {
     /* 2. 取活动信息：名额、状态、报名截止 */
     MYSQL_RES *res = db_query(
         "SELECT a.max_participants, a.current_count, a.status, a.signup_deadline, "
-        "c.join_permission, c.club_id "
+        "a.join_permission, c.club_id "
         "FROM activities a JOIN clubs c ON a.club_id=c.club_id "
         "WHERE a.activity_id=%d", aid);
     if (!res || mysql_num_rows(res) == 0) {

@@ -13,7 +13,7 @@
       </el-tabs>
       <div v-loading="loading">
         <el-empty v-if="!loading && list.length === 0" description="暂无消息" />
-        <div v-for="msg in list" :key="msg.notif_id" class="msg-item"
+        <div v-for="msg in list" :key="msg.notification_id" class="msg-item"
           :class="{ unread: !msg.is_read }" @click="readMsg(msg)">
           <div class="msg-icon">
             <el-icon :style="{ color: typeColor(msg.type) }"><component :is="typeIcon(msg.type)" /></el-icon>
@@ -65,7 +65,7 @@ async function loadData() {
 
 async function readMsg(msg) {
   if (!msg.is_read) {
-    await api.post('/api/notifications/read', { notification_id: msg.notif_id })
+    await api.post('/api/notifications/read', { notification_id: msg.notification_id })
     msg.is_read = true
     unreadCount.value = Math.max(0, unreadCount.value - 1)
   }

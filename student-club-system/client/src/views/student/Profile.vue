@@ -29,7 +29,7 @@
                 <el-form-item label="姓名"><el-input v-model="form.real_name" :disabled="!editing" /></el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="学号"><el-input v-model="form.student_id" :disabled="!editing" /></el-form-item>
+                <el-form-item label="学号"><el-input v-model="form.student_id" disabled /></el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="手机号"><el-input v-model="form.phone" :disabled="!editing" /></el-form-item>
@@ -91,9 +91,9 @@ const roleLabel = r => ({ school_admin:'学校管理员', college_admin:'学院�
 
 async function saveProfile() {
   saving.value = true
-  const res = await api.put('/api/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email, student_id: form.value.student_id })
+  const res = await api.put('/api/profile', { real_name: form.value.real_name, phone: form.value.phone, email: form.value.email })
   saving.value = false
-  if (res.code === 0) { ElMessage.success('保存成功'); editing.value = false }
+  if (res.code === 0) { ElMessage.success('保存成功'); editing.value = false; loadProfile() }
   else ElMessage.error(res.msg)
 }
 
@@ -104,11 +104,20 @@ async function changePwd() {
   else ElMessage.error(res.msg)
 }
 
-onMounted(async () => {
-  const res = await api.get('/api/me')
+async function loadProfile() {
+  const res = await api.get('/api/profile')
   if (res.code === 0) {
     user.value = res.data
-    Object.assign(form.value, res.data)
+    form.value = {
+      username: res.data.username || '',
+      real_name: res.data.real_name || '',
+      student_id: res.data.student_no || '',
+      phone: res.data.phone || '',
+      email: res.data.email || '',
+      college_name: res.data.college_name || ''
+    }
   }
-})
+}
+
+onMounted(loadProfile)
 </script>

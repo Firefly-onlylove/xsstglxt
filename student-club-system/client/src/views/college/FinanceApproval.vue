@@ -12,7 +12,7 @@
       </template>
       <template #actions="{ row }">
         <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-        <template v-if="row.status === 'college_pending'">
+        <template v-if="row.status === 'pending'">
           <el-button link type="success" @click="approve(row, true)">通过</el-button>
           <el-button link type="danger" @click="openReject(row)">驳回</el-button>
         </template>
@@ -24,9 +24,9 @@
       <el-descriptions :column="2" border v-if="current">
         <el-descriptions-item label="社团">{{ current.club_name }}</el-descriptions-item>
         <el-descriptions-item label="金额">¥{{ current.amount }}</el-descriptions-item>
-        <el-descriptions-item label="用途" :span="2">{{ current.purpose }}</el-descriptions-item>
+        <el-descriptions-item label="用途" :span="2">{{ current.description }}</el-descriptions-item>
         <el-descriptions-item label="申请人">{{ current.applicant_name }}</el-descriptions-item>
-        <el-descriptions-item label="申请时间">{{ current.created_at }}</el-descriptions-item>
+        <el-descriptions-item label="申请时间">{{ current.submitted_at }}</el-descriptions-item>
       </el-descriptions>
       <div v-if="current?.receipt_path" style="margin-top:12px">
         <img :src="'/receipts/'+current.receipt_path" style="max-width:100%;border-radius:4px" />
@@ -34,7 +34,7 @@
       <div style="margin-top:12px;color:#86909C;font-size:13px">
         本院剩余可审批额度：¥{{ availableLimit }}
       </div>
-      <template #footer v-if="current?.status==='college_pending'">
+      <template #footer v-if="current?.status==='pending'">
         <el-button @click="detailVisible = false">关闭</el-button>
         <el-button type="success" @click="approve(current, true)">通过</el-button>
         <el-button type="danger" @click="openReject(current)">驳回</el-button>
@@ -73,20 +73,20 @@ const availableLimit = ref(0)
 const columns = [
   { prop: 'club_name',      label: '社团',   width: 120 },
   { prop: 'amount',         label: '金额',   width: 90 },
-  { prop: 'purpose',        label: '用途' },
+  { prop: 'description',    label: '用途' },
   { prop: 'applicant_name', label: '申请人', width: 90 },
-  { prop: 'created_at',     label: '时间',   width: 120 },
+  { prop: 'submitted_at',   label: '时间',   width: 120 },
   { slot: 'status',         label: '状态',   width: 100 },
   { slot: 'actions',        label: '操作',   width: 160, fixed: 'right' }
 ]
 
-const statusLabel = s => ({ college_pending:'待审批', school_pending:'待校审', approved:'已通过', rejected:'已驳回' }[s] || s)
-const statusType  = s => ({ college_pending:'warning', school_pending:'primary', approved:'success', rejected:'danger' }[s])
+const statusLabel = s => ({ pending:'待审批', approved:'已通过', rejected:'已驳回' }[s] || s)
+const statusType  = s => ({ pending:'warning', approved:'success', rejected:'danger' }[s])
 
 async function loadData() {
   loading.value = true
   const res = await api.get('/api/college/reimbursements/pending', {
-    status: activeTab.value === 'pending' ? 'college_pending' : undefined,
+    status: activeTab.value === 'pending' ? 'pending' : 'history',
     page: page.value, page_size: 10
   })
   loading.value = false
@@ -103,7 +103,7 @@ function openReject(row) { current.value = row; rejectReason.value = ''; detailV
 async function approve(row, pass) {
   if (pass) {
     await ElMessageBox.confirm('确认通过该报销申请？', '提示', { type: 'warning' })
-    const res = await api.post('/api/college/reimbursements/' + row.reimb_id + '/approve', { approved: true })
+    const res = await api.post('/api/college/reimbursements/' + row.reimbursement_id + '/approve', { approved: true })
     if (res.code === 0) { ElMessage.success('已通过'); detailVisible.value = false; loadData() }
     return
   }
@@ -112,7 +112,7 @@ async function approve(row, pass) {
 async function doReject() {
   if (!rejectReason.value) { ElMessage.warning('请填写驳回理由'); return }
   submitting.value = true
-  const res = await api.post('/api/college/reimbursements/' + current.value.reimb_id + '/reject',
+  const res = await api.post('/api/college/reimbursements/' + current.value.reimbursement_id + '/reject',
     { reason: rejectReason.value })
   submitting.value = false
   if (res.code === 0) { ElMessage.success('已驳回'); rejectVisible.value = false; loadData() }

@@ -187,7 +187,7 @@ void club_member_appoint(ApiContext *ctx) {
     int club_id = api_get_path_int(ctx, 1);
     int mid     = api_get_path_int(ctx, 3);
     if (club_id <= 0 || mid <= 0) { api_error(ctx, ERR_INPUT, "参数非法"); return; }
-    if (!club_require_president(ctx, club_id)) return;
+    if (!club_require_manager(ctx, club_id)) return;
 
     char role[16] = "";
     api_get_json_str(ctx, "role", role, sizeof(role));

@@ -1,14 +1,14 @@
 /**
- * club_oversight.c — 学院端 本院社团监督（只读查看，不能审批/解散）
+ * club_oversight.c — 学院端 本院社团监督（查看、重命名、解散 + 成员/活动）
  * 学生社团管理系统 SCMS（Web 架构）
  *
- * 对应处理函数：col_club_list / col_club_detail
+ * 对应处理函数：col_club_list / col_club_detail / col_club_members /
+ *   col_club_activities / col_club_rename / col_club_dissolve
  * 对应前端页面：C1 主页下方本院社团列表 / 社团监督
  *
  * 启用方法：把下面第一行的  #if 0  改成  #if 1。
  *
- * 权限要点：学院只能【查看】本院院级社团 + 全部校级社团（校级对所有人可见），
- * 但对社团的审批、解散、级别设定权在学校端，学院无权操作。
+ * 权限要点：学院只能操作本院院级社团。
  */
 #if 1
 
@@ -17,6 +17,7 @@
 #include "../../include/common.h"
 #include "../../include/routes.h"
 #include "../../include/utils.h"
+#include "../../include/notification.h"
 
 #include <stdio.h>
 

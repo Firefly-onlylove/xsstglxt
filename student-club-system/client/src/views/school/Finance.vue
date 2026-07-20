@@ -152,15 +152,21 @@ async function approveReimb(row, pass) {
   if (!pass) {
     const { value: reason } = await ElMessageBox.prompt('驳回理由', '驳回', { inputValidator: v => v ? true : '请填写理由' })
     const res = await api.post('/api/school/reimbursements/' + row.reimbursement_id + '/reject', { comment: reason })
-    if (res.code === 0) { ElMessage.success('已驳回'); loadReimb() }
+    if (res.code === 0) { ElMessage.success('已驳回'); loadReimb(); loadOverview() }
     return
   }
   await ElMessageBox.confirm('确认通过此报销申请？', '提示', { type: 'warning' })
   const res = await api.post('/api/school/reimbursements/' + row.reimbursement_id + '/approve', { approved: true })
-  if (res.code === 0) { ElMessage.success('已通过'); loadReimb() }
+  if (res.code === 0) { ElMessage.success('已通过'); loadReimb(); loadOverview() }
 }
 
 onMounted(async () => {
+  loadOverview()
+  loadReimb()
+  loadCollegeReimb()
+})
+
+async function loadOverview() {
   const ov = await api.get('/api/school/finance')
   if (ov.code === 0) {
     overview.value[0].value = '¥' + ov.data.total_income
@@ -169,7 +175,5 @@ onMounted(async () => {
     overview.value[3].value = ov.data.approved_reimb
     collegeFinance.value = ov.data.colleges || []
   }
-  loadReimb()
-  loadCollegeReimb()
-})
+}
 </script>

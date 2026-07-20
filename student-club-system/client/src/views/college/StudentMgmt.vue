@@ -4,7 +4,7 @@
     <FilterBar @search="loadData" @reset="onReset">
       <el-input v-model="filters.keyword" placeholder="姓名/学号" clearable style="width:180px" />
       <el-select v-model="filters.class_id" placeholder="按班级筛选" clearable style="width:180px">
-        <el-option v-for="c in classes" :key="c.class_id" :label="c.name" :value="c.class_id" />
+        <el-option v-for="c in classes" :key="c.class_id" :label="c.class_name" :value="c.class_id" />
       </el-select>
       <el-select v-model="filters.status" placeholder="状态" clearable style="width:110px">
         <el-option label="正常" value="active" />
@@ -67,7 +67,7 @@ const restrictForm = ref()
 const restrictData = ref({ restriction_type: '', reason: '' })
 
 const roleLabel = r => ({ general_student: '学生', club_member: '学生', club_admin: '社长/副社长', student: '学生' }[r] || r)
-const roleType  = r => ({ general_student: '', club_member: '', club_admin: 'success', student: '' }[r] || '')
+const roleType  = r => ({ general_student: 'info', club_member: 'info', club_admin: 'success', student: 'info' }[r] || 'info')
 
 const columns = [
   { prop: 'student_no',  label: '学号',     width: 120 },
