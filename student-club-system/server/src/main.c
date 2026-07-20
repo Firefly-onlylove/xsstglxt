@@ -201,6 +201,17 @@ static void handle_me(ApiContext *ctx) {
     if (!ctx->user) { api_error(ctx, ERR_AUTH, "未登录"); return; }
     User *u = ctx->user;
 
+    /* 验证用户是否仍存在于数据库中（防止session缓存已删除用户） */
+    int exists = db_query_int("SELECT COUNT(*) FROM users WHERE user_id=%d", u->user_id);
+    if (exists == 0) {
+        /* 用户已被删除，清除session */
+        char token[SESSION_TOKEN_LEN + 1];
+        get_token_from_cookie(ctx->hm, token, sizeof(token));
+        if (token[0]) auth_logout(token);
+        api_error(ctx, ERR_AUTH, "用户不存在");
+        return;
+    }
+
     /* 动态判断有效角色：社长/副社长的 users.role 可能未同步为 club_admin */
     const char *effective_role = u->role;
     if (strcmp(u->role, "general_student") == 0 || strcmp(u->role, "club_member") == 0) {
