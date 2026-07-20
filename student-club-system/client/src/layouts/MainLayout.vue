@@ -14,9 +14,7 @@
         </el-menu>
       </div>
       <div class="nav-right">
-        <el-badge :value="unreadCount || ''" :hidden="!unreadCount" class="msg-badge">
-          <el-icon class="icon-btn" @click="goMessages"><Bell /></el-icon>
-        </el-badge>
+        <el-icon class="icon-btn" @click="goMessages"><Bell /></el-icon>
         <el-dropdown @command="handleUserCmd">
           <span class="user-info">
             <el-avatar :size="30" :style="{ background: '#1677FF' }">{{ userInitial }}</el-avatar>
@@ -48,7 +46,6 @@ import { ElMessage } from 'element-plus'
 const route = useRoute()
 const router = useRouter()
 const user = ref(null)
-const unreadCount = ref(0)
 const systemName = ref(localStorage.getItem('scms_system_name') || 'SCMS · 学生社团管理系统')
 
 const activeMenu = computed(() => route.path)
@@ -103,8 +100,6 @@ const userInitial = computed(() => (user.value?.real_name || user.value?.usernam
 async function loadUser() {
   const res = await api.get('/api/me')
   if (res.code === 0) user.value = res.data
-  const nr = await api.get('/api/notifications/unread')
-  if (nr.code === 0) unreadCount.value = nr.data?.unread || 0
 }
 
 function goMessages() {
