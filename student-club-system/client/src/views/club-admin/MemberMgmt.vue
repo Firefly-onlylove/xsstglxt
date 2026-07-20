@@ -97,19 +97,19 @@ async function loadApplications() {
 }
 async function setManager(row) {
   await ElMessageBox.confirm(`确认将 ${row.real_name} 设为社团管理员？`, '提示', { type: 'warning' })
-  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.user_id + '/appoint', { role: 'vice_president' })
+  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.member_id + '/appoint', { role: 'vice_president' })
   if (res.code === 0) { ElMessage.success('已设为管理员'); loadMembers() }
   else { ElMessage.error(res.msg || '操作失败') }
 }
 async function demoteToMember(row) {
   await ElMessageBox.confirm(`确认将 ${row.real_name} 降为普通成员？`, '提示', { type: 'warning' })
-  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.user_id + '/appoint', { role: 'member' })
+  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.member_id + '/appoint', { role: 'member' })
   if (res.code === 0) { ElMessage.success('已降为成员'); loadMembers() }
   else { ElMessage.error(res.msg || '操作失败') }
 }
 async function removeMember(row) {
   await ElMessageBox.confirm(`确认将 ${row.real_name} 移出社团？`, '提示', { type: 'warning' })
-  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.user_id + '/remove')
+  const res = await api.post('/api/club/' + clubId.value + '/members/' + row.member_id + '/remove')
   if (res.code === 0) { ElMessage.success('已移出'); loadMembers() }
 }
 async function approve(row, pass) {
