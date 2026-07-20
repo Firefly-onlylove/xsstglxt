@@ -64,6 +64,7 @@ static const Route ROUTES[] = {
     { "POST", "/api/school/users/*/reset-password", sch_user_reset_pwd,     1 },
     { "POST", "/api/school/users/*/restrict",       sch_user_restrict,      1 },
     { "POST", "/api/school/users/*/lift-restriction",sch_user_lift_restrict,1 },
+    { "POST", "/api/school/users/*/set-role",        sch_user_set_role,      1 },
     { "GET",  "/api/school/users/*",                sch_user_detail,        1 },
     { "GET",  "/api/school/users",                  sch_user_list,          1 },
     { "GET",  "/api/school/restrictions",           sch_restriction_list,   1 },
