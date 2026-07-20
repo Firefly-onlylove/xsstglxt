@@ -207,10 +207,28 @@ echo.
 echo ============================================================
 echo   本地访问:  http://127.0.0.1:8000
 echo   按 Ctrl+C 停止服务器
+echo   输入 [stop] 并回车停止服务器
 echo ============================================================
 echo.
 start "" http://127.0.0.1:8000
-scms.exe
+
+:: 启动 scms.exe 并持续检查是否有 stop 命令输入
+set "STOP_FLAG="
+start "" /B scms.exe
+
+:wait_loop
+set /p "STOP_INPUT="
+if /i "!STOP_INPUT!"=="stop" (
+    echo 正在停止服务器...
+    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%PORT%" ^| findstr "LISTENING" 2^>nul') do (
+        echo   正在终止 scms PID %%a
+        taskkill /PID %%a /F >nul 2>&1
+    )
+    goto :after_stop
+)
+goto :wait_loop
+
+:after_stop
 
 echo.
 echo 服务器已停止。
