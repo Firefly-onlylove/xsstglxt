@@ -3,9 +3,9 @@
  * 学生社团管理系统 SCMS
  *
  * 封装 MySQL C API：
- *   - 简单连接池（互斥保护，多线程安全）
+ *   - 简易连接池（互斥锁保护，多线程安全）
  *   - db_query / db_execute 支持 printf 风格格式化
- *   - 事务、转义、错误处理
+ *   - 事务控制、字符串转义、错误处理
  *
  * 线程模型：Mongoose 单线程事件循环调用业务函数，
  * 但为稳健起见连接池仍加锁，便于将来扩展多线程。
@@ -39,25 +39,30 @@ typedef pthread_mutex_t db_mutex_t;
 
 /* 连接池槽位 */
 typedef struct {
-    MYSQL *conn;
-    int    in_use;
+    MYSQL *conn;     // MySQL 连接句柄
+    int    in_use;   // 是否正在被使用（1=占用 0=空闲）
 } PoolSlot;
 
 static struct {
-    DBConfig  cfg;
-    PoolSlot  slots[MAX_POOL];
-    int       size;
-    db_mutex_t lock;
-    int       initialized;
-    char      last_error[512];
+    DBConfig  cfg;          // 数据库配置
+    PoolSlot  slots[MAX_POOL]; // 连接槽位数组
+    int       size;         // 池中连接数
+    db_mutex_t lock;        // 线程互斥锁
+    int       initialized;  // 是否已初始化
+    char      last_error[512]; // 最近一次错误信息
 } g_db = {0};
 
-/* ── 建立单条连接 ── */
+/**
+ * create_connection — 建立单条 MySQL 连接
+ * 返回: 成功返回连接句柄，失败返回 NULL
+ *
+ * 配置客户端字符集为 utf8mb4，防止中文乱码。
+ */
 static MYSQL *create_connection(void) {
     MYSQL *conn = mysql_init(NULL);
     if (!conn) return NULL;
 
-    /* 客户端字符集，防止中文乱码 */
+    /* 设置客户端字符集，防止中文乱码 */
     mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 
     if (!mysql_real_connect(conn, g_db.cfg.host, g_db.cfg.user,
@@ -72,6 +77,14 @@ static MYSQL *create_connection(void) {
     return conn;
 }
 
+/**
+ * db_init — 初始化数据库连接池
+ * @cfg: 数据库配置（主机、端口、用户名、密码、库名、池大小）
+ * 返回: OK(0) 成功, ERR_DB(-1) 失败
+ *
+ * 全有或全无策略：所有连接建立成功才返回 OK，
+ * 若有一条连接失败则关闭已建立的连接并返回错误。
+ */
 int db_init(const DBConfig *cfg) {
     if (g_db.initialized) return OK;
 
@@ -105,6 +118,11 @@ int db_init(const DBConfig *cfg) {
     return OK;
 }
 
+/**
+ * db_close — 关闭数据库连接池
+ *
+ * 释放所有连接，销毁互斥锁，调用 mysql_library_end() 清理。
+ */
 void db_close(void) {
     if (!g_db.initialized) return;
     MUTEX_LOCK(&g_db.lock);
@@ -120,6 +138,10 @@ void db_close(void) {
     g_db.initialized = 0;
 }
 
+/**
+ * db_get_conn — 从连接池获取一条可用连接
+ * 返回: 成功返回连接句柄，池满则临时新建一条（用完直接关闭，不入池），失败返回 NULL
+ */
 MYSQL *db_get_conn(void) {
     MYSQL *conn = NULL;
     MUTEX_LOCK(&g_db.lock);
@@ -137,6 +159,13 @@ MYSQL *db_get_conn(void) {
     return conn;
 }
 
+/**
+ * db_release_conn — 归还连接到连接池
+ * @conn: 要归还的连接句柄
+ *
+ * 如果连接属于池中的槽位，则标记为空闲。
+ * 如果是临时创建的连接（不在池中），则直接关闭。
+ */
 void db_release_conn(MYSQL *conn) {
     if (!conn) return;
     MUTEX_LOCK(&g_db.lock);
@@ -152,7 +181,14 @@ void db_release_conn(MYSQL *conn) {
     mysql_close(conn);
 }
 
-/* ── 内部：格式化 SQL 到缓冲区 ── */
+/**
+ * format_sql — 将 printf 风格的格式化参数写入 SQL 缓冲区
+ * @buf: 输出缓冲区
+ * @size: 缓冲区大小
+ * @fmt: SQL 格式化模板
+ * @ap: 变长参数列表
+ * 返回: 成功返回写入字节数，失败（SQL 过长）返回 -1
+ */
 static int format_sql(char *buf, size_t size, const char *fmt, va_list ap) {
     int n = vsnprintf(buf, size, fmt, ap);
     if (n < 0 || (size_t)n >= size) {
@@ -163,6 +199,12 @@ static int format_sql(char *buf, size_t size, const char *fmt, va_list ap) {
     return n;
 }
 
+/**
+ * db_execute — 执行一条无结果集的 SQL（INSERT/UPDATE/DELETE 等）
+ * @fmt: printf 风格的 SQL 模板
+ * @...: 格式化参数
+ * 返回: 成功返回受影响行数，失败返回 -1
+ */
 int db_execute(const char *fmt, ...) {
     char sql[SQL_BUF_SIZE];
     va_list ap;
@@ -185,6 +227,14 @@ int db_execute(const char *fmt, ...) {
     return affected;
 }
 
+/**
+ * db_query — 执行一条有结果集的 SQL（SELECT 等）
+ * @fmt: printf 风格的 SQL 模板
+ * @...: 格式化参数
+ * 返回: 成功返回结果集句柄（调用者负责 mysql_free_result），失败返回 NULL
+ *
+ * res 为 NULL 且无错误码表示该语句本身无结果集（正常情况）。
+ */
 MYSQL_RES *db_query(const char *fmt, ...) {
     char sql[SQL_BUF_SIZE];
     va_list ap;
@@ -212,6 +262,10 @@ MYSQL_RES *db_query(const char *fmt, ...) {
     return res;
 }
 
+/**
+ * db_last_insert_id — 获取最近一次 INSERT 操作生成的自增 ID
+ * 返回: 自增 ID 值，失败返回 0
+ */
 unsigned long db_last_insert_id(void) {
     MYSQL *conn = db_get_conn();
     if (!conn) return 0;
@@ -220,23 +274,43 @@ unsigned long db_last_insert_id(void) {
     return id;
 }
 
-/* ── 事务 ──
+/**
+ * 事务控制
+ *
  * 注意：事务需在同一连接上执行。这里用简单实现，
- * 直接对整个库开关 autocommit。业务若需严格事务，
- * 建议在单次请求内串行完成。
+ * 直接对整个连接开关 autocommit。业务若需严格事务，
+ * 建议在单次请求内串行完成全部操作。
+ */
+
+/**
+ * db_begin — 开启事务
+ * 返回: OK(0) 成功, ERR_DB(-1) 失败
  */
 int db_begin(void) {
     return db_execute("START TRANSACTION") >= 0 ? OK : ERR_DB;
 }
 
+/**
+ * db_commit — 提交事务
+ * 返回: OK(0) 成功, ERR_DB(-1) 失败
+ */
 int db_commit(void) {
     return db_execute("COMMIT") >= 0 ? OK : ERR_DB;
 }
 
+/**
+ * db_rollback — 回滚事务
+ * 返回: OK(0) 成功, ERR_DB(-1) 失败
+ */
 int db_rollback(void) {
     return db_execute("ROLLBACK") >= 0 ? OK : ERR_DB;
 }
 
+/**
+ * db_escape — 对字符串进行 SQL 转义，防止注入
+ * @str: 原始字符串（可为 NULL）
+ * 返回: 转义后的字符串（调用者负责 free），NULL 输入返回空字符串
+ */
 char *db_escape(const char *str) {
     if (!str) {
         char *empty = malloc(1);
@@ -258,10 +332,18 @@ char *db_escape(const char *str) {
     return out;
 }
 
+/**
+ * db_error — 获取最近一次数据库操作的错误信息
+ * 返回: 错误描述字符串
+ */
 const char *db_error(void) {
     return g_db.last_error[0] ? g_db.last_error : "无错误";
 }
 
+/**
+ * db_ping — 检测数据库连接是否存活
+ * 返回: OK(0) 连接正常, ERR_DB(-1) 连接断开
+ */
 int db_ping(void) {
     MYSQL *conn = db_get_conn();
     if (!conn) return ERR_DB;
@@ -270,11 +352,22 @@ int db_ping(void) {
     return r == 0 ? OK : ERR_DB;
 }
 
+/**
+ * db_get_config — 获取当前数据库配置
+ * 返回: 配置结构体指针
+ */
 const DBConfig *db_get_config(void) {
     return &g_db.cfg;
 }
 
 /* ── 便捷取值 ── */
+
+/**
+ * db_query_int — 执行 SQL 并返回第一行第一列的整数值
+ * @fmt: printf 风格的 SQL 模板
+ * @...: 格式化参数
+ * 返回: 查询结果整数值，失败或无结果返回 0
+ */
 int db_query_int(const char *fmt, ...) {
     char sql[SQL_BUF_SIZE];
     va_list ap;
@@ -292,6 +385,12 @@ int db_query_int(const char *fmt, ...) {
     return val;
 }
 
+/**
+ * db_query_double — 执行 SQL 并返回第一行第一列的浮点数值
+ * @fmt: printf 风格的 SQL 模板
+ * @...: 格式化参数
+ * 返回: 查询结果浮点数值，失败或无结果返回 0.0
+ */
 double db_query_double(const char *fmt, ...) {
     char sql[SQL_BUF_SIZE];
     va_list ap;
@@ -309,8 +408,15 @@ double db_query_double(const char *fmt, ...) {
     return val;
 }
 
-/* 取第一行第一列字符串到 out。签名：fmt 在首，变参在尾（out/out_size 之后）。
- * 无结果或出错时 out 置空串。 */
+/**
+ * db_query_str — 执行 SQL 并将第一行第一列的字符串写入 out
+ * @fmt: printf 风格的 SQL 模板（注意：fmt 在首，变参在 out/out_size 之后）
+ * @out: 输出缓冲区
+ * @out_size: 输出缓冲区大小
+ * @...: SQL 格式化参数
+ *
+ * 无结果或出错时 out 置空串。
+ */
 void db_query_str(const char *fmt, char *out, size_t out_size, ...) {
     if (out && out_size > 0) out[0] = '\0';
     if (!out || out_size == 0) return;
