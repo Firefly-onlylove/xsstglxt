@@ -50,6 +50,12 @@
     <!-- 编辑管理员 -->
     <el-dialog v-model="editVisible" title="编辑管理员" width="460px">
       <el-form ref="editForm" :model="editData" label-width="110px">
+        <el-form-item label="姓名">
+          <el-input v-model="editData.real_name" placeholder="真实姓名" />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="editData.phone" placeholder="手机号" />
+        </el-form-item>
         <el-form-item label="角色" prop="role" :rules="[{required:true}]">
           <el-radio-group v-model="editData.role">
             <el-radio value="college_admin">学院管理员</el-radio>
@@ -252,7 +258,9 @@ function openEdit(row) {
   editData.value = {
     role,
     college_id: row.college_id || null,
-    club_id: null
+    club_id: null,
+    real_name: row.real_name || '',
+    phone: row.phone || ''
   }
   current.value = row
   editVisible.value = true

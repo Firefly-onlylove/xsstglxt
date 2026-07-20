@@ -112,14 +112,15 @@ void sch_user_detail(ApiContext *ctx) {
 }
 
 /* POST /api/school/users/college-admin  创建学院管理员
- * body: username, real_name, password, college_id */
+ * body: username, real_name, password, college_id, phone */
 void sch_user_create_college_admin(ApiContext *ctx) {
     if (!api_require_school_admin(ctx)) return;
 
-    char username[51] = "", real_name[51] = "", password[128] = "";
+    char username[51] = "", real_name[51] = "", password[128] = "", phone[21] = "";
     api_get_json_str(ctx, "username", username, sizeof(username));
     api_get_json_str(ctx, "real_name", real_name, sizeof(real_name));
     api_get_json_str(ctx, "password", password, sizeof(password));
+    api_get_json_str(ctx, "phone", phone, sizeof(phone));
     int college_id = api_get_json_int(ctx, "college_id", 0);
 
     if (utils_is_empty(username) || utils_is_empty(real_name) ||
@@ -136,10 +137,13 @@ void sch_user_create_college_admin(ApiContext *ctx) {
     utils_sha256(password, hash);
 
     char *eu = db_escape(username), *en = db_escape(real_name);
+    char *ep = phone[0] ? db_escape(phone) : NULL;
     int ok = db_execute(
-        "INSERT INTO users (username, password, real_name, role, college_id) "
-        "VALUES ('%s','%s','%s','college_admin',%d)", eu, hash, en, college_id);
+        "INSERT INTO users (username, password, real_name, role, college_id, phone) "
+        "VALUES ('%s','%s','%s','college_admin',%d,%s)",
+        eu, hash, en, college_id, ep ? ep : "NULL");
     free(eu); free(en);
+    if (ep) free(ep);
     if (ok < 0) { api_error(ctx, ERR_DB, "创建失败"); return; }
 
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
@@ -308,6 +312,9 @@ void sch_user_set_role(ApiContext *ctx) {
     api_get_json_str(ctx, "role", role, sizeof(role));
     int college_id = api_get_json_int(ctx, "college_id", 0);
     int club_id = api_get_json_int(ctx, "club_id", 0);
+    char real_name[51] = "", phone[21] = "";
+    api_get_json_str(ctx, "real_name", real_name, sizeof(real_name));
+    api_get_json_str(ctx, "phone", phone, sizeof(phone));
 
     if (!utils_str_equal(role, "college_admin") && !utils_str_equal(role, "club_admin") &&
         !utils_str_equal(role, "club_member") && !utils_str_equal(role, "general_student")) {
@@ -353,6 +360,26 @@ void sch_user_set_role(ApiContext *ctx) {
         /* general_student: 清除特殊角色，去除 club_admins 关联和成员记录 */
         db_execute("DELETE FROM club_admins WHERE user_id=%d", id);
         db_execute("UPDATE users SET role='general_student' WHERE user_id=%d", id);
+    }
+    /* 同步更新姓名和手机号 */
+    if (real_name[0] || phone[0]) {
+        char sets[256] = "";
+        if (real_name[0]) {
+            char *ern = db_escape(real_name);
+            snprintf(sets, sizeof(sets), "real_name='%s'", ern);
+            free(ern);
+        }
+        if (phone[0]) {
+            char *eph = db_escape(phone);
+            char tmp[128];
+            snprintf(tmp, sizeof(tmp), "%s%sphone='%s'",
+                     sets[0] ? "" : "", sets[0] ? "," : "", eph);
+            strncat(sets, tmp, sizeof(sets) - strlen(sets) - 1);
+            free(eph);
+        }
+        if (sets[0]) {
+            db_execute("UPDATE users SET %s WHERE user_id=%d", sets, id);
+        }
     }
     db_commit();
 
