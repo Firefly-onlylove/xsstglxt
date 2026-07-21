@@ -15,8 +15,8 @@
  *
  * 二级审批流程：
  *   社团提交(status=pending, college_reviewed=pending)
- *   → 学院审批通过(college_reviewed=approved, 提交至学校)
- *   → 学校最终审批(status=approved) → 记 finance 支出
+ *   → 学院审批通过(status=approved) → 自动记finance支出 → 通知学校
+ *   → 学院驳回(status=rejected)
  */
 #if 1
 
@@ -115,8 +115,7 @@ static int check_reimb_owned(int reimbursement_id, int college_id, double *out_a
 }
 
 /* POST /api/college/reimbursements/{id}/approve —— 学院审批通过
- * 只设置 college_reviewed='approved'，status 仍保留 pending，
- * 等待学校管理员最终审批。*/
+ * 直接设为 status='approved'，无需学校端二次审批 */
 void col_reimb_approve(ApiContext *ctx) {
     if (!api_require_college_admin(ctx)) return;
     int cid = ctx->user->college_id;
@@ -126,25 +125,30 @@ void col_reimb_approve(ApiContext *ctx) {
     int applicant = check_reimb_owned(rid, cid, &amount);
     if (applicant == 0) { api_error(ctx, ERR_PERMISSION, "无权审批或该报销已处理"); return; }
 
-    /* 学院审批通过：设 college_reviewed='approved'，status 仍为 pending，等待学校终审 */
-    db_execute("UPDATE reimbursement SET college_reviewed='approved', reviewer_id=%d, "
-               "reviewed_at=NOW() WHERE reimbursement_id=%d",
+    /* 学院审批通过：直接完结，设 status='approved' */
+    db_execute("UPDATE reimbursement SET status='approved', college_reviewed='approved', "
+               "reviewer_id=%d, reviewed_at=NOW() WHERE reimbursement_id=%d",
                ctx->user->user_id, rid);
     db_execute("INSERT INTO logs (user_id, action, target_type, target_id, detail) "
-               "VALUES (%d, 'approve_reimbursement', 'reimbursement', %d, '学院审批通过，提交至学校终审')",
+               "VALUES (%d, 'approve_reimbursement', 'reimbursement', %d, '学院审批通过报销')",
                ctx->user->user_id, rid);
 
-    /* 通知学校管理员进行最终审批 */
-    notification_notify_school_admins("新的报销待终审",
-        "学院已审批通过一笔报销申请，请前往财务监督处理。",
+    /* 记录支出（finance 表记一笔 expense） */
+    db_execute("INSERT INTO finance (club_id, type, amount, source, description, operator_id, record_time) "
+               "SELECT r.club_id, 'expense', r.amount, 'reimbursement', r.description, %d, NOW() "
+               "FROM reimbursement r WHERE r.reimbursement_id=%d",
+               ctx->user->user_id, rid);
+
+    /* 通知学校管理员 */
+    notification_notify_school_admins("报销已审批",
+        "一笔报销申请已由学院审批通过并记账。",
         "reimb_notify", rid);
 
-    /* 通知申请人：学院已通过，等待学校终审 */
-    notification_send(applicant, "报销申请学院已通过",
-        "您的报销申请已通过学院审核，等待学校终审。",
+    notification_send(applicant, "报销申请已通过",
+        "您的报销申请已通过学院审批，款项已记录。",
         "reimbursement_result", rid);
 
-    api_ok_msg(ctx, "已通过（提交至学校终审）");
+    api_ok_msg(ctx, "已通过");
 }
 
 /* POST /api/college/reimbursements/{id}/reject —— 学院驳回（需原因） */
