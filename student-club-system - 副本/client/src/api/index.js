@@ -31,7 +31,14 @@ async function request(method, url, data) {
     opts.body = JSON.stringify(data)
   }
   const query = data && method === 'GET'
-    ? '?' + new URLSearchParams(data).toString()
+    ? (() => {
+        const clean = {}
+        for (const [k, v] of Object.entries(data)) {
+          if (v != null && v !== '') clean[k] = v
+        }
+        const qs = new URLSearchParams(clean).toString()
+        return qs ? '?' + qs : ''
+      })()
     : ''
   const res = await fetch(BASE + url + query, opts)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
