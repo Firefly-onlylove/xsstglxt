@@ -44,7 +44,7 @@ void col_reimb_pending(ApiContext *ctx) {
 
     MYSQL_RES *res;
     if (strcmp(status, "approved") == 0) {
-        /* 学院已批——college_reviewed='approved'，无论学校端是否最终处理 */
+        /* 已通过——status='approved' */
         res = db_query(
             "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
             "r.description, r.receipt_path, u.real_name AS applicant_name, "
@@ -53,10 +53,10 @@ void col_reimb_pending(ApiContext *ctx) {
             "JOIN clubs c ON r.club_id=c.club_id "
             "LEFT JOIN users u ON r.applicant_id=u.user_id "
             "WHERE c.college_id=%d AND c.level='college' "
-            "AND r.college_reviewed='approved' "
+            "AND r.status='approved' "
             "ORDER BY r.submitted_at DESC", cid);
     } else if (strcmp(status, "rejected") == 0) {
-        /* 学院已驳回 */
+        /* 已驳回——status='rejected' */
         res = db_query(
             "SELECT r.reimbursement_id, r.club_id, c.club_name, r.amount, "
             "r.description, r.receipt_path, u.real_name AS applicant_name, "
@@ -65,7 +65,7 @@ void col_reimb_pending(ApiContext *ctx) {
             "JOIN clubs c ON r.club_id=c.club_id "
             "LEFT JOIN users u ON r.applicant_id=u.user_id "
             "WHERE c.college_id=%d AND c.level='college' "
-            "AND r.college_reviewed='rejected' "
+            "AND r.status='rejected' "
             "ORDER BY r.submitted_at DESC", cid);
     } else if (strcmp(status, "history") == 0) {
         /* 已审批记录：所有学院已处理过的（college_reviewed=approved或rejected，或status=approved/rejected） */
